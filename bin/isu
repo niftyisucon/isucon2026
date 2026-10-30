@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# isu: ISUCON 作業の唯一の入口。設定は isu.conf（共有）と .local/isu.local.conf（個人）。
+# macOS の Bash 3.2 でも動くように、連想配列や mapfile は使わない。
+set -euo pipefail
+# 失敗した箇所を出す。cmd_* が意図して非0を返したとき（difftest の差分ありなど）は出さない。
+trap 'case "$BASH_COMMAND" in "\"cmd_"*|cmd_*) ;; *) echo "isu: failed: $BASH_COMMAND (${BASH_SOURCE[0]}:$LINENO)" >&2 ;; esac' ERR
+
+ISU_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+ISU_LIB="$ISU_ROOT/lib/isu"
+# shellcheck source=../lib/isu/common.sh
+source "$ISU_LIB/common.sh"
+
+usage() {
+  cat <<'USAGE'
+Usage: isu <command> [args]
+
+調査・準備
+  help                      このヘルプを表示
+  hosts                     ホスト一覧（持ち主・役割・ロック状態）
+  ssh <host> [cmd...]        ホストへ SSH（cmd 省略で対話）
+  discover [host...]         構成を調べて hosts/<host>/discovery.md を作る
+  setup [host...]            計測ツール導入とログ設定（冪等）
+  pull [host...]             /etc の管理対象と webapp をリポジトリへ取り込む
+
+反映
+  build                      ローカルでアプリをビルド（ISU_BUILD_CMD）
+  deploy [host...] [-f]      ビルド→rsync→変更があったものだけ再起動
+  restart [host...]          管理対象サービスを再起動
+
+協調
+  lock <host> [purpose]      ホストのロックを取る（待つ）
+  unlock <host>              自分のロックを外す
+  whoami                     自分の識別子（ロックの持ち主名）
+
+共通オプション: -f/--force  持ち主チェック・本番ガードを無視する
+USAGE
+}
+
+cmd=${1:-help}
+shift || true
+case "$cmd" in
+  help|-h|--help) usage ;;
+  *)
+    # lib/isu/cmd/<name>.sh を置けばサブコマンドになる（ここの一覧を直さなくてよい）
+    case "$cmd" in *[!a-z0-9-]*) die "unknown command: $cmd (isu help)" ;; esac
+    [ -f "$ISU_LIB/cmd/$cmd.sh" ] || die "unknown command: $cmd (isu help)"
+    # shellcheck disable=SC1090
+    source "$ISU_LIB/cmd/$cmd.sh"
+    "cmd_$cmd" "$@"
+    ;;
+esac

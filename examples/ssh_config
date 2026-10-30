@@ -1,0 +1,7 @@
+# .local/ssh_config にコピーして使う。Host 名は isu.conf の ISU_HOSTS と一致させる。
+Host isu1
+  HostName 203.0.113.1
+  User isucon
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  StrictHostKeyChecking accept-new

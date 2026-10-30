@@ -1,0 +1,49 @@
+# ISUCON 16 本戦
+
+サーバー操作用の Bash CLI `bin/isu`。`isucon-template` から構成調査・セットアップ・取り込み・デプロイと補助コマンドを移植したものです。
+ベンチ・分析・スコア管理・Docker での手元検証は含めていません。
+
+## はじめに
+
+必要なものは Bash、SSH、GNU rsync 3 系（macOS は `brew install rsync`）、Git、アプリのビルドに必要なツールチェーンです。
+サーバーではパスワードなしの sudo が必要です。setup は Debian/Ubuntu 系、サービス操作は systemd を想定しています。
+
+```bash
+mkdir -p .local
+cp examples/ssh_config .local/ssh_config
+cp examples/isu.local.conf .local/isu.local.conf
+```
+
+`.local/ssh_config` に各ホストの接続先と鍵、`.local/isu.local.conf` に自分の名前（`ISU_ME`）を設定します。
+`isu.conf` のホスト名・owner をそれぞれ一致させてください。`.local/` は Git 管理対象外です。
+
+## 初動からデプロイまで
+
+```bash
+./bin/isu help
+./bin/isu hosts
+./bin/isu discover          # hosts/<host>/discovery.md に構成を出力
+```
+
+調査結果を見て `isu.conf` の `ChangeMe`、役割、管理対象パス、採用する言語、ビルド方法を埋めてください。
+ひな形の言語除外設定は Go 用なので、採用言語に合わせて変更します。
+
+```bash
+./bin/isu setup             # 計測ツール導入、nginx LTSV ログ・MySQL スローログ設定
+./bin/isu pull              # サーバー設定とアプリを取り込む
+./bin/isu deploy isu1       # ビルド → rsync → 変更に応じてサービス再起動
+```
+
+`discover`、`setup`、`pull`、`deploy`、`restart` はホスト名を省略すると全ホストを対象にします。
+`pull` は設定を `hosts/<host>/<サーバーの絶対パス>` に、最初の app ホストのアプリを `webapp/` に取り込みます。
+`pull` と `deploy` は rsync の `--delete` を使うため、同期先の対象ファイルは同期元に合わせて削除もされます。除外設定は `isu.conf` で指定します。
+
+`setup` はパッケージ導入とログ設定を行い、nginx の reload と DB の restart を実行します。
+最終提出前のログ無効化は手動で行ってください。
+
+`deploy` は owner と本番ホストのチェックを行い、ホスト単位のロックを取ります。
+`ISU_PROD_HOST` に指定したホストは、Git の `main` ブランチかつ追跡対象に未コミット変更がない状態から反映します。
+このフォルダは移植時点では Git 未初期化のため、運用開始時に Git リポジトリを作成してコミットしてください。
+`-f` / `--force` で owner・本番チェックを省略できます。
+
+補助コマンドは `hosts`、`ssh`、`build`、`restart`、`lock`、`unlock`、`whoami` です。詳細は `./bin/isu help` を参照してください。
