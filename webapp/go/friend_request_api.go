@@ -33,53 +33,38 @@ func createFriendRequestHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
-		blocked, err := isBlocked(ctx, tx, actor, input.RecipientID)
-		if err != nil {
+		var state struct {
+			Blocked bool `db:"blocked"`
+			Friends bool `db:"friends"`
+		}
+		if err := tx.GetContext(ctx, &state, `SELECT
+		 EXISTS(SELECT 1 FROM block_relations WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)) AS blocked,
+		 EXISTS(SELECT 1 FROM friendships WHERE user_low_id=$3 AND user_high_id=$4) AS friends`, actor, input.RecipientID, min(actor, input.RecipientID), max(actor, input.RecipientID)); err != nil {
 			return err
 		}
-		if blocked {
+		if state.Blocked || state.Friends {
 			return NewAPIError(http.StatusConflict, "relationship_conflict")
 		}
-		friends, err := getFriendIDs(ctx, tx, actor)
-		if err != nil {
-			return err
-		}
-		for _, id := range friends {
-			if id == input.RecipientID {
-				return NewAPIError(http.StatusConflict, "relationship_conflict")
-			}
-		}
-		var existingID string
-		err = tx.GetContext(ctx, &existingID, `
-   SELECT id FROM friend_requests WHERE status='pending' AND
-    ((requester_id=$1 AND recipient_id=$2) OR (requester_id=$2 AND recipient_id=$1))
-  `, actor, input.RecipientID)
-		var requestID string
+		var request FriendRequest
+		err = tx.GetContext(ctx, &request, `
+		 SELECT id,requester_id,recipient_id,status,created_at,updated_at FROM friend_requests WHERE status='pending' AND
+		 ((requester_id=$1 AND recipient_id=$2) OR (requester_id=$2 AND recipient_id=$1))`, actor, input.RecipientID)
 		if err == nil {
-			request, err := getFriendRequest(ctx, tx, existingID)
-			if err != nil {
-				return err
-			}
 			if request.RequesterID == actor {
 				return NewAPIError(http.StatusConflict, "relationship_conflict")
 			}
-			if _, err := tx.ExecContext(ctx, `UPDATE friend_requests SET status='accepted', updated_at=clock_timestamp() WHERE id=$1`, request.ID); err != nil {
+			if err := tx.GetContext(ctx, &request, `UPDATE friend_requests SET status='accepted', updated_at=clock_timestamp() WHERE id=$1 RETURNING id,requester_id,recipient_id,status,created_at,updated_at`, request.ID); err != nil {
 				return err
 			}
 			if err := insertFriendship(ctx, tx, request); err != nil {
 				return err
 			}
-			requestID = request.ID
 		} else if errors.Is(err, sql.ErrNoRows) {
-			requestID = uuid.NewString()
-			if _, err := tx.ExecContext(ctx, `INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($1,$2,$3,'pending',clock_timestamp(),clock_timestamp())`, requestID, actor, input.RecipientID); err != nil {
+			requestID := uuid.NewString()
+			if err := tx.GetContext(ctx, &request, `INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($1,$2,$3,'pending',clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at`, requestID, actor, input.RecipientID); err != nil {
 				return err
 			}
 		} else {
-			return err
-		}
-		request, err := getFriendRequest(ctx, tx, requestID)
-		if err != nil {
 			return err
 		}
 		if err := tx.Commit(); err != nil {
@@ -149,11 +134,7 @@ func transitionFriendRequestHandler(h *HandlerContext) echo.HandlerFunc {
 				return err
 			}
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE friend_requests SET status=$2, updated_at=clock_timestamp() WHERE id=$1`, request.ID, status); err != nil {
-			return err
-		}
-		request, err = getFriendRequest(ctx, tx, request.ID)
-		if err != nil {
+		if err := tx.GetContext(ctx, &request, `UPDATE friend_requests SET status=$2, updated_at=clock_timestamp() WHERE id=$1 RETURNING id,requester_id,recipient_id,status,created_at,updated_at`, request.ID, status); err != nil {
 			return err
 		}
 		if err := tx.Commit(); err != nil {

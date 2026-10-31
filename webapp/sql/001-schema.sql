@@ -85,6 +85,7 @@ CREATE TABLE users (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
+CREATE UNIQUE INDEX users_username_unique ON users(username);
 ALTER TABLE image_objects ADD CONSTRAINT image_objects_owner_fk FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE RESTRICT;
 
 -- 2026-09-10 管理者を消す時のオペレーションはどうすればよいですか？
@@ -138,6 +139,8 @@ CREATE TABLE follows (
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE(follower_id,followee_id)
 );
+
+CREATE INDEX IF NOT EXISTS follows_followee_id ON follows(followee_id);
 
 CREATE TABLE block_relations (
   id varchar(36) PRIMARY KEY,

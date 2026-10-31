@@ -50,7 +50,12 @@ func decodeJPEG(data []byte, limit int) error {
 	return nil
 }
 func validateJPEG(c *echo.Context, h *HandlerContext, data []byte, limit int) error {
-	if validEdgeMAC(h.Config.EdgeKey, "jpeg", imageValidationValue(data, limit), c.Request().Header.Get(validationHeader)) {
+	key := ""
+	if h.Config != nil {
+		key = h.Config.EdgeKey
+	}
+	proof := c.Request().Header.Get(validationHeader)
+	if len(key) >= 32 && proof != "" && validEdgeMAC(key, "jpeg", imageValidationValue(data, limit), proof) {
 		return nil
 	}
 	return decodeJPEG(data, limit)

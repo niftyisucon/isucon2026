@@ -90,6 +90,14 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
+		// 画像も同一トランザクションに含め、投稿枠不足や退会との競合時には一緒に戻す。
+		// FK が取る KEY SHARE は下の NO KEY UPDATE と互換なので、画像転送中は
+		// 同じユーザーの投稿・退会を排他しない。投稿時刻は枠の確認後に別途決める。
+		imageID := uuid.NewString()
+		imageCreatedAt := time.Now().UTC().Truncate(time.Microsecond)
+		if err := h.insertImage(ctx, tx, imageID, userID, prepared, &imageCreatedAt); err != nil {
+			return err
+		}
 		// ユーザー行のロックと取得を1往復で行う（europe/america から DB までは約100ms）。
 		var user User
 		if err := tx.GetContext(ctx, &user, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE id = $1 AND status = 'active' FOR NO KEY UPDATE`, userID); err != nil {
@@ -132,10 +140,6 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		postedAt := time.Now().UTC().Truncate(time.Microsecond)
 		if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
 			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
-		}
-		imageID := uuid.NewString()
-		if err := h.insertImage(ctx, tx, imageID, userID, prepared, &postedAt); err != nil {
-			return err
 		}
 		// 投稿直後に同じリージョンの友達が取得することが多いので、書き込み時にキャッシュへ入れる。
 		// 閲覧可否は取得時に毎回 DB で確認するため、ロールバックされても返ることはない。

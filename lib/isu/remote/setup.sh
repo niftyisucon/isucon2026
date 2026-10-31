@@ -64,6 +64,7 @@ case "$db_service" in
       cat > "$pg_conf_dir/conf.d/99-isu-log.conf" <<'PGCONF'
 # isu setup が追加。最終提出前に無効化する。
 log_min_duration_statement = 0
+log_parameter_max_length = 0
 PGCONF
       chown postgres:postgres "$pg_conf_dir/conf.d/99-isu-log.conf"
       systemctl reload "$db_service"
