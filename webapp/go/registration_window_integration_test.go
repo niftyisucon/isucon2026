@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -123,5 +124,25 @@ func TestConcurrentRegistrationAndWindow(t *testing.T) {
 	}
 	if windows != 1 || notifications != 9 {
 		t.Fatalf("active windows=%d notifications=%d", windows, notifications)
+	}
+	// Registration and window creation both hold the users table lock. A user
+	// committed before a window starts receives its notification; a later user
+	// does not. Exercise both operations concurrently against the real handlers.
+	for i := 0; i < 12; i++ {
+		username := fmt.Sprintf("concurrent%d", i)
+		day := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC).AddDate(0, 0, i).Format(time.DateOnly)
+		results := make(chan int, 2)
+		go func() {
+			results <- post("/register", fmt.Sprintf(`{"username":%q,"displayName":"Name","region":"asia"}`, username)).Code
+		}()
+		go func() { results <- post("/window", fmt.Sprintf(`{"region":"asia","localDate":%q}`, day)).Code }()
+		if first, second := <-results, <-results; first != 201 || second != 201 {
+			t.Fatalf("concurrent registration/window: %d %d", first, second)
+		}
+		var created, notified bool
+		err := db.QueryRow(`SELECT u.created_at <= w.starts_at, EXISTS (SELECT 1 FROM notifications n WHERE n.user_id=u.id AND n.posting_window_id=w.id) FROM users u CROSS JOIN posting_windows w WHERE u.username=$1 AND w.region='asia' AND w.local_date=$2`, username, day).Scan(&created, &notified)
+		if err != nil || created != notified {
+			t.Fatalf("%s created before window=%v notified=%v: %v", username, created, notified, err)
+		}
 	}
 }
