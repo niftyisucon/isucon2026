@@ -132,7 +132,7 @@ func loadViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID str
     (SELECT COALESCE(json_agg(id), '[]') FROM friends) AS friends_json,
     (SELECT COALESCE(json_agg(json_build_array(f.user_low_id, f.user_high_id)), '[]')
      FROM friendships f
-     WHERE f.user_low_id IN (SELECT id FROM friends) OR f.user_high_id IN (SELECT id FROM friends)) AS friendships_json
+     WHERE f.user_low_id = ANY(ARRAY(SELECT id FROM friends)) OR f.user_high_id = ANY(ARRAY(SELECT id FROM friends))) AS friendships_json
   FROM viewer
  `, viewerID); err != nil {
 		return viewer, err
