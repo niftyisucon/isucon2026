@@ -132,6 +132,8 @@ CREATE TABLE follows (
   UNIQUE(follower_id,followee_id)
 );
 
+CREATE INDEX IF NOT EXISTS follows_followee_id ON follows(followee_id);
+
 CREATE TABLE block_relations (
   id varchar(36) PRIMARY KEY,
   blocker_id varchar(36) NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
