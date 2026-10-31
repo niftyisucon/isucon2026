@@ -41,3 +41,8 @@ INSERT INTO block_relations (id, blocker_id, blocked_id, created_at)
 SELECT id, blocker_id, blocked_id, created_at FROM initial_block_relations;
 
 COMMIT;
+
+-- 競技中に追加したインデックス。既存環境にも初期化時に作成する（2回目以降は何もしない）。
+CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
+CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
+CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
