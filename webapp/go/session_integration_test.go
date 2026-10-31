@@ -123,4 +123,56 @@ func TestConcurrentLoginLocal(t *testing.T) {
 	if err = db.Get(&active, `SELECT count(*) FROM login_sessions WHERE user_id='user' AND active`); err != nil || active != 1 {
 		t.Fatalf("direct helper active=%d %v", active, err)
 	}
+
+	// A logout of the previous token must not invalidate a replacement login,
+	// whichever transaction acquires the user lock first.
+	for i := 0; i < 12; i++ {
+		old, err := CreateLoginSession(db, "user")
+		if err != nil {
+			t.Fatal(err)
+		}
+		errs := make(chan error, 2)
+		go func() { _, err := CreateLoginSession(db, "user"); errs <- err }()
+		go func() { errs <- InvalidateLoginSession(db, "user", old.TokenHash) }()
+		for j := 0; j < 2; j++ {
+			if err := <-errs; err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := db.Get(&active, `SELECT count(*) FROM login_sessions WHERE user_id='user' AND active`); err != nil || active != 1 {
+			t.Fatalf("concurrent logout active=%d: %v", active, err)
+		}
+	}
+
+	// Deletion and login serialize on the user row; no active session may
+	// survive deletion, regardless of which transaction wins the lock.
+	e.POST("/delete", func(c *echo.Context) error {
+		c.Set("session", &Session{UserID: "user"})
+		return deleteAccountHandler(&HandlerContext{DB: db})(c)
+	})
+	for i := 0; i < 12; i++ {
+		if _, err := db.Exec(`UPDATE users SET status='active', deleted_at=NULL WHERE id='user'`); err != nil {
+			t.Fatal(err)
+		}
+		codes := make(chan int, 2)
+		go func() {
+			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(`{"username":"user","secretKey":"secret"}`))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, req)
+			codes <- rec.Code
+		}()
+		go func() {
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/delete", nil))
+			codes <- rec.Code
+		}()
+		first, second := <-codes, <-codes
+		if !((first == 204 && (second == 200 || second == 401)) || (second == 204 && (first == 200 || first == 401))) {
+			t.Fatalf("concurrent deletion status: %d %d", first, second)
+		}
+		if err := db.Get(&active, `SELECT count(*) FROM login_sessions WHERE user_id='user' AND active`); err != nil || active != 0 {
+			t.Fatalf("after deletion active=%d: %v", active, err)
+		}
+	}
 }
