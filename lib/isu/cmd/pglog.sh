@@ -1,20 +1,26 @@
 # shellcheck shell=bash
 # ログはローカルへ取得し、解析もローカルのPerlで行う。
 cmd_pglog() {
-  local host="" begin="" end="" input="" output="" h bin prefix timezone threshold destination
+  local host="" begin="" end="" input="" output="" tail_mib="" h bin prefix timezone threshold destination
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --begin|--end|--input-dir|--output-dir)
+      --begin|--end|--input-dir|--output-dir|--tail-mib)
         [ "$#" -ge 2 ] || die "$1 の値が必要です"
         case "$1" in
           --begin) begin=$2 ;; --end) end=$2 ;;
           --input-dir) input=$2 ;; --output-dir) output=$2 ;;
+          --tail-mib) [ -n "$2" ] || die "--tail-mib は1〜4096の整数です"; tail_mib=$2 ;;
         esac
         shift 2 ;;
       -*) die "unknown option: $1" ;;
       *) [ -z "$host" ] || die "DBホストは1台だけ指定してください"; host=$1; shift ;;
     esac
   done
+  if [ -n "$tail_mib" ]; then
+    case "$tail_mib" in *[!0-9]*|0*|?????*) die "--tail-mib は1〜4096の整数です" ;; esac
+    [ "$tail_mib" -le 4096 ] || die "--tail-mib は1〜4096の整数です"
+    [ -z "$input" ] || die "--tail-mib と --input-dir は併用できません"
+  fi
   if [ -z "$host" ]; then
     for h in "${ISU_HOSTS[@]}"; do
       if has_role "$h" db; then host=$h; break; fi
@@ -40,19 +46,26 @@ cmd_pglog() {
   [ ! -e "$output/report.html" ] && [ ! -e "$output/report.txt" ] || die "レポートが既にあります。別の出力先を指定してください"
   if [ -z "$input" ]; then
     [ ! -e "$output/postgresql.log.gz" ] && [ ! -e "$output/log-settings.txt" ] || die "取得済みデータがあります。--input-dir で再利用するか別の出力先を指定してください"
-    if [ -n "$begin" ] || [ -n "$end" ]; then
+    if [ -z "$tail_mib" ] && { [ -n "$begin" ] || [ -n "$end" ]; }; then
       log "期間指定はローカル解析のみです。転送対象は現在のログ全体です（再解析には --input-dir を使用）。"
     fi
     log "PostgreSQLログ取得: $host:$ISU_PG_LOG_PATH -> $output"
     rscript "$host" lib/isu/remote/postgresql-log.sh info "$ISU_PG_LOG_PATH" "$ISU_DB_NAME" > "$output/log-settings.txt" || return
-    if rscript "$host" lib/isu/remote/postgresql-log.sh snapshot "$ISU_PG_LOG_PATH" "$ISU_DB_NAME" > "$output/postgresql.log.gz.tmp"; then
+    local snapshot_args=(snapshot "$ISU_PG_LOG_PATH" "$ISU_DB_NAME")
+    if [ -n "$tail_mib" ]; then
+      snapshot_args=(tail "$ISU_PG_LOG_PATH" "$ISU_DB_NAME" "$tail_mib" "$begin" "$end")
+      warn "直近${tail_mib}MiBから完全なUTCログレコードを取得します。末尾1レコードは除外します。"
+    fi
+    if rscript "$host" lib/isu/remote/postgresql-log.sh "${snapshot_args[@]}" > "$output/postgresql.log.gz.tmp" 2> "$output/snapshot-info.txt"; then
+      cat "$output/snapshot-info.txt" >&2
       mv "$output/postgresql.log.gz.tmp" "$output/postgresql.log.gz" || return
     else
+      cat "$output/snapshot-info.txt" >&2
       rm -f "$output/postgresql.log.gz.tmp"
       return 1
     fi
     input=$output
-    printf 'host=%s\nlog=%s\ncaptured_at_utc=%s\n' "$host" "$ISU_PG_LOG_PATH" "$(date -u +%FT%TZ)" > "$output/source.txt"
+    printf 'host=%s\nlog=%s\ncaptured_at_utc=%s\ntail_mib=%s\n' "$host" "$ISU_PG_LOG_PATH" "$(date -u +%FT%TZ)" "${tail_mib:-full}" > "$output/source.txt"
   fi
   {
     IFS= read -r prefix
