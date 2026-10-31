@@ -11,6 +11,7 @@ import (
 )
 
 func TestNotificationBatchQueryLocal(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	dsn := os.Getenv("ISUCON_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("requires disposable local PostgreSQL")

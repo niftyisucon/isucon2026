@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"github.com/jackc/pgx/v5"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,7 +24,7 @@ type notificationSubscription struct {
 }
 
 // One worker queries all live subscriptions in the same database snapshot.
-// Delivery uses committed notification rows, including their user-specific IDs.
+// 配信はコミット済みの投稿期間、または旧方式の通知行から導出する。
 type notificationPoller struct {
 	db            *sqlx.DB
 	ctx           context.Context
@@ -31,6 +33,7 @@ type notificationPoller struct {
 	listening     atomic.Bool
 	onReset       func()
 	epochSchema   bool
+	derived       bool
 	mu            sync.Mutex
 	subscriptions map[*notificationSubscription]struct{}
 	running       bool
@@ -38,7 +41,11 @@ type notificationPoller struct {
 
 func newNotificationPoller(db *sqlx.DB) *notificationPoller {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &notificationPoller{db: db, subscriptions: make(map[*notificationSubscription]struct{}), ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1)}
+	return &notificationPoller{db: db, subscriptions: make(map[*notificationSubscription]struct{}), ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), derived: derivedNotificationsEnabled()}
+}
+
+func derivedNotificationsEnabled() bool {
+	return os.Getenv("ISUREAL_DERIVED_NOTIFICATIONS") != "false"
 }
 
 func (p *notificationPoller) subscribe(userID, region string, since time.Time, epoch ...string) *notificationSubscription {
@@ -93,6 +100,13 @@ const notificationPollQuery = `
    WHERE n.user_id = u.id AND n.created_at > s.since AND w.ended_at IS NULL
    ORDER BY n.created_at, n.id LIMIT 1
  ) x ON true`
+
+const derivedNotificationPollQuery = `
+ SELECT s.ordinal, u.region AS user_region, NULL::text AS id, w.id AS posting_window_id, w.region, w.starts_at AS created_at
+ FROM ROWS FROM(jsonb_to_recordset($1::jsonb) AS (user_id text, since timestamptz))
+ WITH ORDINALITY AS s(user_id, since, ordinal)
+ LEFT JOIN users u ON u.id = s.user_id AND u.status = 'active'
+ LEFT JOIN posting_windows w ON w.region = u.region AND w.ended_at IS NULL AND w.starts_at > s.since`
 
 func (p *notificationPoller) run() {
 	ticker := time.NewTicker(500 * time.Millisecond)
@@ -157,8 +171,14 @@ func (p *notificationPoller) deliver(snapshot []*notificationSubscription, rows 
 		}
 		if (s.Epoch != "" && s.Epoch != row.Epoch) || row.UserRegion == nil || *row.UserRegion != s.region {
 			s.result <- nil
-		} else if row.ID != nil {
-			s.result <- &getNotificationsResponse{ID: *row.ID, PostingWindowID: *row.PostingWindowID, Region: *row.Region, CreatedAt: *row.CreatedAt}
+		} else if row.PostingWindowID != nil {
+			var id string
+			if p.derived {
+				id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(s.UserID+"\x00"+*row.PostingWindowID)).String()
+			} else {
+				id = *row.ID
+			}
+			s.result <- &getNotificationsResponse{ID: id, PostingWindowID: *row.PostingWindowID, Region: *row.Region, CreatedAt: *row.CreatedAt}
 		} else {
 			continue
 		}
@@ -219,8 +239,12 @@ func (p *notificationPoller) startListener(dsn string) {
 }
 
 func (p *notificationPoller) query() string {
-	if !p.epochSchema {
-		return notificationPollQuery
+	query := notificationPollQuery
+	if p.derived {
+		query = derivedNotificationPollQuery
 	}
-	return strings.Replace(notificationPollQuery, "SELECT s.ordinal,", "SELECT (SELECT generation::text FROM isureal_runtime_state WHERE id=true) AS epoch, s.ordinal,", 1)
+	if !p.epochSchema {
+		return query
+	}
+	return strings.Replace(query, "SELECT s.ordinal,", "SELECT (SELECT generation::text FROM isureal_runtime_state WHERE id=true) AS epoch, s.ordinal,", 1)
 }
