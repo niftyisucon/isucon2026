@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -55,6 +54,13 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 		if ranked && (input.BeforeScore == nil) != (input.BeforeID == "") {
 			return NewAPIError(http.StatusBadRequest, "invalid_pagination")
 		}
+		if ranked {
+			response, err := getRankedFeed(c.Request().Context(), h.DB, GetSession(c).UserID, input)
+			if err != nil {
+				return err
+			}
+			return c.JSON(http.StatusOK, response)
+		}
 		ctx := c.Request().Context()
 		viewer, err := loadViewerContext(ctx, h.DB, GetSession(c).UserID)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -79,19 +85,13 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 			}
 		}
 		beforePostedAt, beforeID := input.BeforePostedAt, input.BeforeID
-		if ranked {
-			beforePostedAt, beforeID = nil, ""
-		}
 		conditions := `
    AND p.author_id <> $1 AND w.ended_at IS NULL
    AND ($2::timestamptz IS NULL OR (p.posted_at, p.id) < ($2, $3))
   `
 		args := []any{viewer.ID, beforePostedAt, beforeID}
-		if ranked {
-			conditions += rankedFeedConditions
-			args = append(args, mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends))
-		} else {
-			conditions += `
+
+		conditions += `
    AND NOT (p.author_id = ANY($4::text[]))
    AND (p.visibility = 'public'
         OR (p.visibility = 'friends' AND p.author_id = ANY($5::text[]))
@@ -101,14 +101,11 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
         OR $7 = 'friends' AND p.author_id = ANY($5::text[])
         OR $7 = 'following' AND p.author_id = ANY($8::text[]))
   `
-			args = append(args, mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends), input.Feed, mapKeys(following))
-		}
+		args = append(args, mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends), input.Feed, mapKeys(following))
 		conditions += `
    ORDER BY p.posted_at DESC, p.id DESC
   `
-		if !ranked {
-			conditions += ` LIMIT 51`
-		}
+		conditions += ` LIMIT 51`
 		posts, err := selectPostsWithAuthor(ctx, h.DB, conditions, args...)
 		if err != nil {
 			return err
@@ -119,25 +116,9 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 				candidates = append(candidates, post)
 			}
 		}
-		var scores map[string]int64
-		if ranked {
-			if scores, err = recommendationScores(ctx, h.DB, viewer, candidates); err != nil {
-				return err
-			}
-			sort.SliceStable(candidates, func(i, j int) bool {
-				return scores[candidates[i].ID] > scores[candidates[j].ID]
-			})
-		}
 		items := make([]feedItemResponse, 0)
 		for _, post := range candidates {
-			score := scores[post.ID]
-			if ranked && input.BeforeScore != nil && !rankedBefore(score, post.Post, *input.BeforeScore, *input.BeforePostedAt, input.BeforeID) {
-				continue
-			}
 			item := feedItemResponse{createPostResponse: newPostResponse(post.Post, post.Author)}
-			if ranked {
-				item.Score = &score
-			}
 			items = append(items, item)
 			if len(items) == 51 {
 				break
