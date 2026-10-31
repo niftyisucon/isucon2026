@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #26419 window 2026-10-31 07:08:00–07:09:59 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=91428 total_time_sec=251.2 avg_ms=2.75
+--- top patterns by total time ---
+n=51112 total=168.2s avg=3.3ms max=3837ms :: 
+n=786 total=31.1s avg=39.6ms max=148ms :: WITH candidates AS MATERIALIZED (
+n=7152 total=17.9s avg=2.5ms max=36ms :: commit
+n=305 total=14.6s avg=48.0ms max=3389ms :: SELECT pg_advisory_xact_lock_shared(N, $)
+n=2578 total=11.7s avg=4.5ms max=270ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=1186 total=3.1s avg=2.6ms max=45ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type,created_at,storage_key) VALUES($,$,$,?,COALESCE($::timestamptz,clock_timestamp()),$)
+n=1481 total=0.5s avg=0.4ms max=22ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=137 total=0.4s avg=3.2ms max=57ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=158 total=0.4s avg=2.5ms max=12ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=1660 total=0.3s avg=0.2ms max=39ms :: SELECT
+n=17 total=0.3s avg=18.7ms max=96ms :: SELECT user_low_id, user_high_id FROM friendships WHERE user_low_id IN ($, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $
+n=287 total=0.3s avg=0.9ms max=27ms :: INSERT INTO users (id, username, secret_key_hash, display_name, region, search_username, search_display_name) VALUES ($, $, $, $, $, $, $) ON CONFLICT (username) DO NOTHING RETURNING id, username, secret_key_hash, displa
+n=779 total=0.3s avg=0.3ms max=16ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=886 total=0.2s avg=0.2ms max=155ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=135 total=0.2s avg=1.4ms max=18ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=885 total=0.2s avg=0.2ms max=78ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=784 total=0.1s avg=0.2ms max=14ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id=ANY($) AND status=?
+n=781 total=0.1s avg=0.1ms max=17ms :: UPDATE friend_requests SET status=$, updated_at=clock_timestamp() WHERE id=$ RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=981 total=0.1s avg=0.1ms max=6ms :: SELECT EXISTS(SELECT N FROM block_relations WHERE (blocker_id=$ AND blocked_id=$) OR (blocker_id=$ AND blocked_id=$))
+n=7221 total=0.1s avg=0.0ms max=3ms :: begin
+n=2399 total=0.1s avg=0.0ms max=5ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=144 total=0.1s avg=0.5ms max=65ms :: SELECT profile_image_id FROM users WHERE id=$ FOR NO KEY UPDATE
+n=12 total=0.1s avg=4.8ms max=24ms :: SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false AND datname IN (?);
+n=1565 total=0.1s avg=0.0ms max=9ms :: SELECT id, requester_id, recipient_id, status, created_at, updated_at FROM friend_requests WHERE id=$
+n=1864 total=0.1s avg=0.0ms max=5ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ?
+--- slowest single queries ---
+3837ms :: 
+3389ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+3326ms :: 
+2707ms :: 
+2687ms :: 
+2124ms :: 
+2117ms :: 
+2094ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2092ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+1993ms :: 

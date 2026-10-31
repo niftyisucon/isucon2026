@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #26992 window 2026-10-31 07:14:00–07:15:59 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=71019 total_time_sec=239.0 avg_ms=3.36
+--- top patterns by total time ---
+n=34390 total=100.0s avg=2.9ms max=3650ms :: 
+n=118 total=48.0s avg=406.4ms max=2164ms :: SELECT p.id, p.author_id, p.posting_window_id, p.image_id, p.caption, p.visibility,
+n=730 total=21.8s avg=29.8ms max=1926ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=2130 total=15.9s avg=7.5ms max=1497ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=6373 total=15.7s avg=2.5ms max=43ms :: commit
+n=622 total=15.6s avg=25.0ms max=116ms :: WITH candidates AS MATERIALIZED (
+n=244 total=10.1s avg=41.6ms max=3394ms :: SELECT pg_advisory_xact_lock_shared(N, $)
+n=180 total=2.4s avg=13.6ms max=217ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=1 total=1.4s avg=1403.2ms max=1403ms :: DELETE FROM realmojis WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=975 total=1.4s avg=1.4ms max=35ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type,created_at,storage_key) VALUES($,$,$,?,COALESCE($::timestamptz,clock_timestamp()),$)
+n=708 total=1.0s avg=1.4ms max=238ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=1 total=1.0s avg=973.6ms max=974ms :: DELETE FROM posts WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=0.7s avg=689.9ms max=690ms :: DELETE FROM comments WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=156 total=0.5s avg=3.0ms max=37ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=1241 total=0.4s avg=0.3ms max=12ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=380 total=0.3s avg=0.7ms max=188ms :: SELECT id FROM users WHERE id = $ FOR NO KEY UPDATE
+n=1352 total=0.3s avg=0.2ms max=24ms :: SELECT
+n=678 total=0.2s avg=0.3ms max=10ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=1 total=0.2s avg=204.2ms max=204ms :: INSERT INTO image_locations (id, created_at)
+n=180 total=0.2s avg=1.0ms max=14ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=1 total=0.2s avg=186.1ms max=186ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id, created_at, updated_at)
+n=226 total=0.2s avg=0.8ms max=12ms :: INSERT INTO users (id, username, secret_key_hash, display_name, region, search_username, search_display_name) VALUES ($, $, $, $, $, $, $) ON CONFLICT (username) DO NOTHING RETURNING id, username, secret_key_hash, displa
+n=2568 total=0.1s avg=0.0ms max=18ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=1 total=0.1s avg=96.5ms max=96ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at)
+n=156 total=0.1s avg=0.6ms max=11ms :: UPDATE realmojis SET replaced_at=clock_timestamp() WHERE post_id=$ AND reactor_id=$ AND replaced_at IS NULL AND deleted_at IS NULL
+--- slowest single queries ---
+3650ms :: 
+3463ms :: 
+3394ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+3232ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2164ms :: SELECT p.id, p.author_id, p.posting_window_id, p.image_id, p.caption, p.visibility,
+2023ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+1926ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+1926ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+1923ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+1876ms :: 
