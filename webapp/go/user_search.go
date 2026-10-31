@@ -3,6 +3,8 @@ package isureal
 import (
 	"context"
 	"encoding/json"
+	"strings"
+	"unicode"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,7 +18,9 @@ type searchCandidate struct {
 // Limit only known matches. Unprepared legacy rows must not consume the 51
 // slots: an arbitrary number of those rows may fail the Go predicate. The union
 // is disjoint; applying the same ordering after it preserves cursor semantics.
-const searchCandidatesSQL = `WITH candidates AS MATERIALIZED (
+// Inline the two branches so the prepared branch can use substring indexes and
+// the legacy branch can use its small partial index instead of copying all users.
+const searchCandidatesPrefix = `WITH candidates AS NOT MATERIALIZED (
  SELECT id, username, display_name, search_username, search_display_name FROM users
  WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3))
  AND id NOT IN (SELECT CASE WHEN blocker_id=$1 THEN blocked_id ELSE blocker_id END
@@ -24,13 +28,43 @@ const searchCandidatesSQL = `WITH candidates AS MATERIALIZED (
 ), matches AS (
  (SELECT id, username, display_name FROM candidates
   WHERE search_username IS NOT NULL AND search_display_name IS NOT NULL
-    AND (strpos(search_username,$4)>0 OR strpos(search_display_name,$4)>0)
+    AND (`
+
+const searchCandidatesSuffix = `)
   ORDER BY username,id LIMIT 51)
  UNION ALL
  SELECT id, username, display_name FROM candidates
  WHERE search_username IS NULL OR search_display_name IS NULL
 )
 SELECT id, username, display_name FROM matches ORDER BY username,id`
+
+const searchCandidatesSQL = searchCandidatesPrefix + `search_username LIKE $4 ESCAPE E'\\' OR search_display_name LIKE $4 ESCAPE E'\\'` + searchCandidatesSuffix
+const searchCandidatesScanSQL = searchCandidatesPrefix + `strpos(search_username,$4)>0 OR strpos(search_display_name,$4)>0` + searchCandidatesSuffix
+
+var searchPatternEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// The input is already NFC/case-folded. LIKE is only an indexable spelling of
+// literal substring search; user-supplied wildcard/escape characters stay literal.
+func searchSubstringPattern(query string) string {
+	return "%" + searchPatternEscaper.Replace(query) + "%"
+}
+
+func searchCandidatesQuery(query string) (string, string) {
+	// Unanchored patterns without a word trigram cannot narrow a GIN scan.
+	// Keep literal strpos for short/symbol-only queries; all queries are supported.
+	wordRun := 0
+	for _, r := range query {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			wordRun++
+			if wordRun >= 3 {
+				return searchCandidatesSQL, searchSubstringPattern(query)
+			}
+		} else {
+			wordRun = 0
+		}
+	}
+	return searchCandidatesScanSQL, query
+}
 
 // Called before serving requests and after reset. Existing rows are prepared in
 // batches; concurrent profile edits cannot be overwritten by an older snapshot.

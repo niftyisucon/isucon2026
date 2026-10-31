@@ -21,6 +21,7 @@ func TestSearchWriteResetAndLegacy(t *testing.T) {
 	if err := prepareUserSearch(t.Context(), db); err != nil {
 		t.Fatal(err)
 	}
+	installSearchIndexes(t, db)
 	h := &HandlerContext{DB: db}
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
@@ -42,7 +43,8 @@ func TestSearchWriteResetAndLegacy(t *testing.T) {
 	check := func(query string, expected ...string) {
 		t.Helper()
 		var rows []searchCandidate
-		if err := db.Select(&rows, searchCandidatesSQL, "viewer", "", "", normalizeSearchText(query)); err != nil {
+		statement, parameter := searchCandidatesQuery(normalizeSearchText(query))
+		if err := db.Select(&rows, statement, "viewer", "", "", parameter); err != nil {
 			t.Fatal(err)
 		}
 		var names []string
@@ -114,7 +116,8 @@ func TestSearchCandidateVolume(t *testing.T) {
 				rows = nil
 				stmt, args := old, []any{"viewer", "", ""}
 				if optimized {
-					stmt, args = searchCandidatesSQL, append(args, query)
+					statement, parameter := searchCandidatesQuery(query)
+					stmt, args = statement, append(args, parameter)
 				}
 				if err := db.Select(&rows, stmt, args...); err != nil {
 					t.Fatal(err)

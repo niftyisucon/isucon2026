@@ -45,8 +45,9 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		// NULL fields (legacy rows) remain candidates and are checked in Go.
 		var candidates []searchCandidate
 		query := normalizeSearchText(input.Q)
-		if err := h.DB.SelectContext(ctx, &candidates, searchCandidatesSQL,
-			viewer, input.BeforeUsername, input.BeforeID, query); err != nil {
+		statement, parameter := searchCandidatesQuery(query)
+		if err := h.DB.SelectContext(ctx, &candidates, statement,
+			viewer, input.BeforeUsername, input.BeforeID, parameter); err != nil {
 			return err
 		}
 		ids := make([]string, 0, 51)

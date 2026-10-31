@@ -67,7 +67,7 @@ func TestSearchUsersLocal(t *testing.T) {
 	}
 	add("viewer", "viewer", "Straße", "active", "regular")
 	add("deleted", "deleted", "Straße", "deleted", "regular")
-	for i, display := range []string{"Straße", "STRASSE", "Σςσ", "Cafe\u0301", "CAFÉ", "100%_\\literal", "🙂", "İIıi", "ﬃ", "hello"} {
+	for i, display := range []string{"Straße", "STRASSE", "Σςσ", "Cafe\u0301", "CAFÉ", "100%_\\literal", "🙂", "İIıi", "ﬃ", "hello", "abc%_\\def", "backslash\\", "abcd"} {
 		add(fmt.Sprintf("unicode-%d", i), fmt.Sprintf("unicode-%02d", i), display, "active", "certified_public")
 	}
 	for i := 0; i < 130; i++ {
@@ -123,18 +123,21 @@ func TestSearchUsersLocal(t *testing.T) {
 		}
 		return result
 	}
-	for _, phase := range []string{"legacy", "prepared", "mixed"} {
+	for _, phase := range []string{"legacy", "prepared", "indexed", "mixed"} {
 		if phase == "prepared" {
 			if err := prepareUserSearch(t.Context(), db); err != nil {
 				t.Fatal(err)
 			}
 			var candidates []searchCandidate
-			if err := db.Select(&candidates, searchCandidatesSQL, "viewer", "", "", "needle"); err != nil {
+			if err := db.Select(&candidates, searchCandidatesSQL, "viewer", "", "", searchSubstringPattern("needle")); err != nil {
 				t.Fatal(err)
 			}
 			if len(candidates) != 51 {
 				t.Fatalf("prepared candidates=%d, want 51", len(candidates))
 			}
+		}
+		if phase == "indexed" {
+			installSearchIndexes(t, db)
 		}
 		if phase == "mixed" {
 			// More than 51 unprepared nonmatches must not hide prepared matches.
@@ -146,7 +149,7 @@ func TestSearchUsersLocal(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		for _, q := range []string{"STRASSE", "ς", "café", "CAFE\u0301", "%", "_", "\\", "🙂", "i", "ffi", "needle", "BULK", "no match"} {
+		for _, q := range []string{"STRASSE", "ς", "café", "CAFE\u0301", "%", "_", "\\", "🙂", "i", "ffi", "needle", "BULK", "no match", "abc%_\\", "abc_", "backslash\\"} {
 			t.Run(phase+"/"+q, func(t *testing.T) {
 				beforeUsername, beforeID := "", ""
 				for page := 0; page < 4; page++ {
