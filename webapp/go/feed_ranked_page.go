@@ -38,7 +38,7 @@ func getRankedFeed(ctx context.Context, db *sqlx.DB, viewerID string, input getF
 	return response, nil
 }
 
-func selectRankedPage(ctx context.Context, db sqlx.QueryerContext, viewer viewerContext, input getFeedRequest) (getFeedResponse, error) {
+func selectRankedPage(ctx context.Context, db *sqlx.Tx, viewer viewerContext, input getFeedRequest) (getFeedResponse, error) {
 	response := getFeedResponse{Items: []feedItemResponse{}}
 	// recommendationScores only needs ID and AuthorID; PostedAt provides the
 	// existing tie-break/cursor order. No candidate limit before scoring.
@@ -52,7 +52,7 @@ func selectRankedPage(ctx context.Context, db sqlx.QueryerContext, viewer viewer
  `+rankedFeedConditions+` ORDER BY p.posted_at DESC,p.id DESC`, viewer.ID, nil, "", mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends)); err != nil {
 		return response, err
 	}
-	scores, err := recommendationScores(ctx, db, viewer, candidates)
+	scores, err := rankedRecommendationScores(ctx, db, viewer, candidates)
 	if err != nil {
 		return response, err
 	}
