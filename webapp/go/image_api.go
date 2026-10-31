@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v5"
 )
 
@@ -72,7 +73,11 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 			// europe/america から DB までは約100msかかるため、署名鍵・閲覧可否・画像本体を1往復で取得する。
 			// image_locations で created_at を引き、image_objects の36パーティションを実行時に1つへ絞る。
 			err = h.DB.GetContext(ctx, &object, imageMissQuery+` AND i.created_at = (SELECT created_at FROM image_locations WHERE id = $1)`, input.ImageID)
-			if errors.Is(err, sql.ErrNoRows) {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "42P01" {
+				// image_locations がまだ無い（reset.sql より先にアプリを再起動した）場合は、従来どおり全パーティションを探す。
+				err = h.DB.GetContext(ctx, &object, imageMissQuery, input.ImageID)
+			} else if errors.Is(err, sql.ErrNoRows) {
 				// 対応表に無い（トリガー導入前の画像など）場合だけ、従来どおり全パーティションを探す。
 				// 対応表にあって行が無い（所有者の退会など）ときは NOT EXISTS が偽になり、探索せずに終わる。
 				err = h.DB.GetContext(ctx, &object, imageMissQuery+` AND NOT EXISTS (SELECT 1 FROM image_locations WHERE id = $1)`, input.ImageID)
