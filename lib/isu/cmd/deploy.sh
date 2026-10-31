@@ -26,7 +26,9 @@ deploy_host() {
     [ -e "$ISU_ROOT/hosts/$h$p" ] || continue
     local own=()
     case "$p" in /home/*/*) u=${p#/home/}; u=${u%%/*}; own=(--chown "$u:$u") ;; esac
-    case "$p" in /etc/postgresql|/etc/postgresql/*) own=(--chown postgres:postgres) ;; esac
+    # PostgreSQL は設定を postgres ユーザーで読むので、手元の umask（027 など）に関係なく読める権限で置く。
+    # 読めないと再起動（追試を含む）で起動しなくなる。
+    case "$p" in /etc/postgresql|/etc/postgresql/*) own=(--chown postgres:postgres --chmod=D755,F644) ;; esac
     out=$(isu_rsync -R --no-implied-dirs -i --delete ${own[@]+"${own[@]}"} "${ex[@]}" "$ISU_ROOT/hosts/$h/.$p" "$h:/") || return
     changed=$(echo "$out" | grep -E '^([<>ch]|\*deleting)' || true)
     [ -n "$changed" ] || continue
