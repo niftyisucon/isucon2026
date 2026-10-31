@@ -60,7 +60,7 @@ deploy_host() {
   local services=""
   has_role "$h" nginx && services="$services nginx"
   has_role "$h" db && services="$services $ISU_DB_SERVICE"
-  has_role "$h" app && services="$services $ISU_APP_SERVICES"
+  has_role "$h" app && services="$services $ISU_APP_SERVICES $(host_attr "$h" app_services)"
   out=$(rssh "$h" "systemctl is-active $services") || { warn "$h: サービスの起動確認に失敗: $out"; return 1; }
   echo "$out" | paste -sd' ' - | sed "s|^|  $h active: |" >&2
   log "deploy $h: ok (${restart[*]})"

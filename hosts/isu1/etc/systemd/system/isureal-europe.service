@@ -1,0 +1,17 @@
+[Unit]
+Description=isureal-go for europe (proxied from the europe nginx, Issue #16)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=isucon
+Group=isucon
+WorkingDirectory=/home/isucon/webapp/go
+EnvironmentFile=/home/isucon/env.sh
+# EnvironmentFile の ISUREAL_REGION=asia を上書きするため、env 経由で起動する（Environment= は EnvironmentFile に負ける）
+ExecStart=/usr/bin/env ISUREAL_REGION=europe ISUREAL_PORT=8081 /home/isucon/webapp/go/isureal
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
