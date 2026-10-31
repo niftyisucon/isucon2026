@@ -96,7 +96,8 @@ func checkWindowRecipients(t *testing.T, db *sqlx.DB, response *httptest.Respons
 		t.Fatal(err)
 	}
 	var users []string
-	if err := db.Select(&users, `SELECT user_id FROM notifications WHERE posting_window_id=$1 ORDER BY user_id`, window.ID); err != nil {
+	if err := db.Select(&users, `SELECT user_id FROM notifications WHERE posting_window_id=$1
+ UNION ALL SELECT unnest(notification_user_ids) FROM posting_windows WHERE id=$1 ORDER BY user_id`, window.ID); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Join(users, ",") != expected {
@@ -113,7 +114,13 @@ func checkWindowRecipients(t *testing.T, db *sqlx.DB, response *httptest.Respons
 }
 
 func TestPostingWindowRegionLock(t *testing.T) {
-	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
+	for _, mode := range []string{"false", "true"} {
+		t.Run(mode, func(t *testing.T) { testPostingWindowRegionLock(t, mode) })
+	}
+}
+
+func testPostingWindowRegionLock(t *testing.T, mode string) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", mode)
 	db, _ := architectureDB(t)
 	e := windowLockApp(db)
 	mustSQL(t, db, `INSERT INTO users(id,username,display_name,secret_key_hash,region,status) VALUES
@@ -168,7 +175,13 @@ func TestPostingWindowRegionLock(t *testing.T) {
 }
 
 func TestPostingMembershipBeforeWindow(t *testing.T) {
-	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
+	for _, mode := range []string{"false", "true"} {
+		t.Run(mode, func(t *testing.T) { testPostingMembershipBeforeWindow(t, mode) })
+	}
+}
+
+func testPostingMembershipBeforeWindow(t *testing.T, mode string) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", mode)
 	for _, operation := range []string{"register", "move", "delete"} {
 		t.Run(operation, func(t *testing.T) {
 			db, _ := architectureDB(t)

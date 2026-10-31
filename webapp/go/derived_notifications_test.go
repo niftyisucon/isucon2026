@@ -67,7 +67,7 @@ func TestDerivedNotificationsFlag(t *testing.T) {
 			t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", value)
 			p := newNotificationPoller(nil)
 			defer p.close()
-			if p.derived != (value != "false") {
+			if p.derived != (value == "true") {
 				t.Fatal("通知方式の既定値または切り替えが不正")
 			}
 			if value == "false" && p.query() != notificationPollQuery {
@@ -140,15 +140,10 @@ func TestNotificationModesSameScenarios(t *testing.T) {
 						move("asia")
 					case "開始時だけ別リージョン":
 						move("asia")
-						if mode == "false" {
-							want = "待機"
-						}
+						want = "待機"
 					case "別リージョンの窓を挟む往復":
 						move("asia")
 						wantRegion = "europe"
-						if mode == "true" {
-							want = "待機"
-						}
 					case "開始後の登録":
 						register()
 						since, epoch = notificationBoundary(t, db)
@@ -289,6 +284,17 @@ func TestNotificationModesStart5000Users(t *testing.T) {
 			if count != want {
 				t.Fatalf("通知行数=%d, 期待値=%d", count, want)
 			}
+			if mode == "true" {
+				var valid bool
+				if err := db.Get(&valid, `SELECT bool_and(cardinality(notification_user_ids)=5000 AND cardinality(notification_ids)=5000)
+ FROM posting_windows`); err != nil || !valid {
+					t.Fatalf("5000人の対象・IDが保存されていない: %v %v", valid, err)
+				}
+				var distinctIDs int
+				if err := db.Get(&distinctIDs, `SELECT count(DISTINCT n.id) FROM posting_windows w CROSS JOIN LATERAL unnest(w.notification_ids) n(id)`); err != nil || distinctIDs != 25000 {
+					t.Fatalf("通知IDが重複または欠損: %d %v", distinctIDs, err)
+				}
+			}
 			sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
 			t.Logf("5000人、窓開始5回: 中央値=%s 最小=%s 最大=%s 通知行=%d", durations[2], durations[0], durations[4], count)
 		})
@@ -298,6 +304,7 @@ func TestNotificationModesStart5000Users(t *testing.T) {
 // 応答は従来どおり4フィールドで、内部の導出方式は公開しない。
 func TestDerivedNotificationResponseFields(t *testing.T) {
 	region, window := "asia", uuid.NewString()
+	firstID, secondID, otherID := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	now := time.Now().UTC()
 	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "true")
 	p := newNotificationPoller(nil)
@@ -309,28 +316,28 @@ func TestDerivedNotificationResponseFields(t *testing.T) {
 		snapshot = append(snapshot, s)
 	}
 	p.deliver(snapshot, []notificationPollRow{
-		{Ordinal: 1, UserRegion: &region, PostingWindowID: &window, Region: &region, CreatedAt: &now},
-		{Ordinal: 2, UserRegion: &region, PostingWindowID: &window, Region: &region, CreatedAt: &now},
+		{Ordinal: 1, UserRegion: &region, ID: &firstID, PostingWindowID: &window, Region: &region, CreatedAt: &now},
+		{Ordinal: 2, UserRegion: &region, ID: &secondID, PostingWindowID: &window, Region: &region, CreatedAt: &now},
 	}, nil)
 	a, b := <-snapshot[0].result, <-snapshot[1].result
 	if a.ID == b.ID {
 		t.Fatal("異なる利用者に同じ通知IDが生成された")
 	}
-	if id, err := uuid.Parse(a.ID); err != nil || len(a.ID) != 36 || id.Version() != 5 {
-		t.Fatalf("通知IDがUUID v5形式ではない: %q", a.ID)
+	if id, err := uuid.Parse(a.ID); err != nil || len(a.ID) != 36 || id.Version() != 4 {
+		t.Fatalf("通知IDがUUID v4形式ではない: %q", a.ID)
 	}
 	restarted := newNotificationPoller(nil)
 	defer restarted.close()
 	s := &notificationSubscription{UserID: "a", region: region, result: make(chan *getNotificationsResponse, 1)}
 	restarted.subscriptions[s] = struct{}{}
-	restarted.deliver([]*notificationSubscription{s}, []notificationPollRow{{Ordinal: 1, UserRegion: &region, PostingWindowID: &window, Region: &region, CreatedAt: &now}}, nil)
+	restarted.deliver([]*notificationSubscription{s}, []notificationPollRow{{Ordinal: 1, UserRegion: &region, ID: &firstID, PostingWindowID: &window, Region: &region, CreatedAt: &now}}, nil)
 	if again := <-s.result; *again != *a {
 		t.Fatalf("ポーラー再作成で通知が変わった: %+v, %+v", a, again)
 	}
 	otherWindow := uuid.NewString()
 	s = &notificationSubscription{UserID: "a", region: region, result: make(chan *getNotificationsResponse, 1)}
 	restarted.subscriptions[s] = struct{}{}
-	restarted.deliver([]*notificationSubscription{s}, []notificationPollRow{{Ordinal: 1, UserRegion: &region, PostingWindowID: &otherWindow, Region: &region, CreatedAt: &now}}, nil)
+	restarted.deliver([]*notificationSubscription{s}, []notificationPollRow{{Ordinal: 1, UserRegion: &region, ID: &otherID, PostingWindowID: &otherWindow, Region: &region, CreatedAt: &now}}, nil)
 	if other := <-s.result; other.ID == a.ID {
 		t.Fatal("異なる窓に同じ通知IDが生成された")
 	}

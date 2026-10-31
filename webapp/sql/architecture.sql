@@ -1,5 +1,8 @@
 -- Idempotent migration; no initial image export or rewrite is required.
 ALTER TABLE image_objects ADD COLUMN IF NOT EXISTS storage_key text;
+-- Each position preserves one recipient and its randomly assigned notification ID.
+ALTER TABLE posting_windows ADD COLUMN IF NOT EXISTS notification_user_ids text[],
+                            ADD COLUMN IF NOT EXISTS notification_ids text[];
 CREATE OR REPLACE FUNCTION isureal_state_changed() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  PERFORM pg_notify('isureal_state','changed');
