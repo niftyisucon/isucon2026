@@ -67,3 +67,7 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER image_locations_insert AFTER INSERT ON image_objects
 FOR EACH ROW EXECUTE FUNCTION image_locations_insert();
+
+-- 認証とログイン時の無効化は有効なセッションだけを検索する。
+CREATE INDEX IF NOT EXISTS login_sessions_active_token_hash ON login_sessions(token_hash) WHERE active = true;
+CREATE INDEX IF NOT EXISTS login_sessions_active_user_id ON login_sessions(user_id) WHERE active = true;

@@ -103,6 +103,10 @@ CREATE TABLE login_sessions (
   reason text
 );
 
+-- 認証とログイン時の無効化は有効なセッションだけを検索する。
+CREATE INDEX IF NOT EXISTS login_sessions_active_token_hash ON login_sessions(token_hash) WHERE active = true;
+CREATE INDEX IF NOT EXISTS login_sessions_active_user_id ON login_sessions(user_id) WHERE active = true;
+
 CREATE TABLE administrator_sessions (
   id varchar(36) PRIMARY KEY,
   administrator_id varchar(36) NOT NULL REFERENCES administrators(id) ON DELETE RESTRICT,
