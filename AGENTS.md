@@ -178,6 +178,7 @@ isucon2026/
 | pgBadger | サーバーの `setup` には含めない。`pgbadger-setup` で固定版をローカルへ導入 | `pglog` でログ取得・集計。出力は `.local/pgbadger/`。期間指定・再集計・確認方法は `docs/pgbadger.md` を参照 |
 | pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
+| Splunk Collector・Goトレース | 通常の `setup` では導入しない | 人間が `splunk-setup`、`splunk-token`、`splunk-tracing` を実行。[導入手順](docs/splunk-setup.md)を参照 |
 | unzip | 未導入ならインストール | 導入処理用の補助ツール |
 
 追加する内容ごとの配置先は次のとおりです。

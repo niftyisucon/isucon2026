@@ -1,0 +1,16 @@
+receivers:
+  postgresql:
+    endpoint: /var/run/postgresql:5432
+    transport: unix
+    username: splunk-otel-collector
+    # receiver の必須項目。Unix ソケットの peer 認証では使用しない。
+    password: unused-peer-auth
+    databases: [isureal]
+    collection_interval: 10s
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [host_metrics, postgresql]

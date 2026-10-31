@@ -6,8 +6,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type HandlerContext struct {
@@ -22,12 +20,15 @@ func NewServer(config *Config) *echo.Echo {
 	}
 	e := echo.New()
 	e.IPExtractor = extractClientIP
+	if config.TracingEnabled {
+		e.Use(TracingMiddleware())
+	}
 
 	e.Use(ActionLogMiddleware(config.LogLevel, os.Stdout))
 	e.Use(middleware.Recover())
 	e.HTTPErrorHandler = APIErrorHandler
 
-	db, err := sqlx.Open("pgx", config.DatabaseDSN())
+	db, err := openDatabase(config)
 	if err != nil {
 		panic("failed to open database: " + err.Error())
 	}
