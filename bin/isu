@@ -20,6 +20,10 @@ Usage: isu <command> [args]
   ssh <host> [cmd...]        ホストへ SSH（cmd 省略で対話）
   discover [host...]         構成を調べて hosts/<host>/discovery.md を作る
   setup [host...]            計測ツール導入とログ設定（冪等）
+  splunk-setup [host...] [-f] Collector 導入・設定検証（トークン投入と起動は別）
+  splunk-token <host> [-f]   人間がトークンを対話入力し Collector を起動
+  splunk-tracing <enable|disable> <host> [-f]
+                            Go バイナリ反映・トレース切り替え（Go のみ再起動）
   pull [host...]             /etc の管理対象と webapp をリポジトリへ取り込む
 
 反映

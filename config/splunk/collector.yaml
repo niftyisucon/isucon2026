@@ -1,0 +1,77 @@
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
+
+receivers:
+  host_metrics:
+    collection_interval: 10s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      paging: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      processes: {}
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 192
+    spike_limit_mib: 32
+  resource_detection:
+    detectors: [system]
+    override: false
+    system:
+      hostname_sources: [os]
+  resource/environment:
+    attributes:
+      - key: deployment.environment.name
+        value: isucon2026
+        action: upsert
+  batch:
+    timeout: 1s
+    send_batch_size: 256
+    send_batch_max_size: 512
+
+exporters:
+  signalfx:
+    access_token: ${env:SPLUNK_ACCESS_TOKEN}
+    api_url: https://api.au0.signalfx.com
+    ingest_url: https://ingest.au0.signalfx.com
+    sync_host_metadata: true
+  otlp_http/splunk:
+    traces_endpoint: https://ingest.au0.signalfx.com/v2/trace/otlp
+    headers:
+      X-SF-Token: ${env:SPLUNK_ACCESS_TOKEN}
+    sending_queue:
+      queue_size: 256
+    retry_on_failure:
+      max_elapsed_time: 30s
+
+service:
+  extensions: [health_check]
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888
+  pipelines:
+    metrics:
+      receivers: [host_metrics]
+      processors: [memory_limiter, resource_detection, resource/environment, batch]
+      exporters: [signalfx]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource_detection, resource/environment, batch]
+      exporters: [otlp_http/splunk]
