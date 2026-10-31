@@ -1,10 +1,11 @@
 # shellcheck shell=bash
 cmd_restart() {
   parse_force "$@"
-  local h
-  for h in $(resolve_hosts ${ARGS[@]+"${ARGS[@]}"}); do
-    guard_host "$h" "$FORCE"
-    restart_services "$h" nginx db app
+  local h hosts
+  hosts=$(resolve_hosts ${ARGS[@]+"${ARGS[@]}"}) || return
+  for h in $hosts; do
+    guard_host "$h" "$FORCE" || return
+    restart_services "$h" nginx db app || return
   done
 }
 
