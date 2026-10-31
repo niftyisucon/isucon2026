@@ -324,6 +324,11 @@ APMには `session.lookup`（SQL呼び出し前のプール取得を含む）、
 署名再利用だけを無効にして比較する場合は `ISUREAL_IMAGE_URL_CACHE=false` をプロセス起動前に設定します。
 診断口・APM・プール上限30はそのままで比較でき、設定反映と再起動もMuseが担当します。
 
+認証のセッション確認は、`ISUREAL_LISTEN_REGIONS` で複数リージョンを受ける asia1 の共有 core でだけメモリを使います。
+isu2・isu3 のSSEなど他のプロセスは、これまでどおり毎回PostgreSQLを確認します。
+命中数は `/debug/stats` の `session_cache` で確認できます。
+DB確認へ戻して比較する場合は `ISUREAL_SESSION_CACHE=false` をプロセス起動前に設定します。
+
 参照: [DBStats](https://pkg.go.dev/database/sql#DBStats)、[runtime metrics](https://pkg.go.dev/runtime/metrics)、[CPU profile](https://pkg.go.dev/net/http/pprof#Profile)。
 
 ## 設定と確認範囲

@@ -34,7 +34,9 @@ func deleteAccountHandler(h *HandlerContext) echo.HandlerFunc {
 		if _, err := tx.ExecContext(ctx, `UPDATE login_sessions SET active=false, invalidated_at=clock_timestamp(), reason='account_deletion' WHERE user_id=$1 AND active=true`, userID); err != nil {
 			return err
 		}
-		if err := tx.Commit(); err != nil {
+		err = tx.Commit()
+		h.Sessions.invalidateUser(userID)
+		if err != nil {
 			return err
 		}
 		return c.NoContent(http.StatusNoContent)

@@ -29,6 +29,7 @@ type HandlerContext struct {
 	Files         *ImageStore
 	StorageColumn bool
 	Notifications *notificationPoller
+	Sessions      *sessionCache
 }
 
 func NewServer(config *Config) *echo.Echo {
@@ -43,6 +44,7 @@ type Runtime struct {
 	Files         *ImageStore
 	StorageColumn bool
 	Notifications *notificationPoller
+	Sessions      *sessionCache
 }
 
 func NewRuntime(config *Config) *Runtime {
@@ -57,6 +59,9 @@ func NewRuntime(config *Config) *Runtime {
 	}
 
 	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache()}
+	if sessionCacheEnabled(config) {
+		r.Sessions = newSessionCache()
+	}
 	if err = prepareUserSearch(context.Background(), db); err != nil {
 		panic("prepare user search: " + err.Error())
 	}
@@ -115,7 +120,7 @@ func NewRegionServer(config *Config, r *Runtime) *echo.Echo {
 	e.Use(ActionLogMiddleware(config.LogLevel, os.Stdout))
 	e.Use(middleware.Recover())
 	e.HTTPErrorHandler = APIErrorHandler
-	handlerContext := &HandlerContext{DB: r.DB, Config: config, IPBans: r.IPBans, Images: r.Images, Files: r.Files, StorageColumn: r.StorageColumn, Notifications: r.Notifications}
+	handlerContext := &HandlerContext{DB: r.DB, Config: config, IPBans: r.IPBans, Images: r.Images, Files: r.Files, StorageColumn: r.StorageColumn, Notifications: r.Notifications, Sessions: r.Sessions}
 	if config.EdgeUpstream != "" {
 		e.GET("/api/notifications", getNotificationsHandler(handlerContext), IPBanMiddleware(handlerContext), SessionMiddleware(handlerContext, true), RegionMiddleware(handlerContext))
 		e.Any("/api/*", newEdgeProxy(config, r.Images))

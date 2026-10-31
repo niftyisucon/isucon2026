@@ -63,7 +63,8 @@ func diagnosticsHandler(db *sql.DB) http.Handler {
 			DB            sql.DBStats       `json:"db"`
 			Runtime       map[string]any    `json:"runtime"`
 			ImageURLs     map[string]uint64 `json:"image_url_cache"`
-		}{time.Now().UTC(), os.Getpid(), time.Since(processStarted).Seconds(), db.Stats(), values, signedImageURLs.stats()})
+			Sessions      map[string]uint64 `json:"session_cache"`
+		}{time.Now().UTC(), os.Getpid(), time.Since(processStarted).Seconds(), db.Stats(), values, signedImageURLs.stats(), sessionCacheStats()})
 	})
 	mux.HandleFunc("GET /debug/pprof/profile", func(w http.ResponseWriter, r *http.Request) {
 		seconds := 30
