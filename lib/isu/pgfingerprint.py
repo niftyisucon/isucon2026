@@ -14,7 +14,7 @@ from decimal import Decimal
 
 
 HEADER = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)?) (\S+) \[\d+\] (.*)$")
-MESSAGE = re.compile(r"^(?:.*? )?(?:LOG|DEBUG[1-5]|INFO|NOTICE|WARNING|ERROR|FATAL|PANIC|DETAIL|HINT|STATEMENT|CONTEXT):\s*(.*)$")
+MESSAGE = re.compile(r"^(?:.*? )?(LOG|DEBUG[1-5]|INFO|NOTICE|WARNING|ERROR|FATAL|PANIC|DETAIL|HINT|STATEMENT|CONTEXT):\s*(.*)$")
 DURATION = re.compile(r"^duration: ([0-9]+(?:\.[0-9]+)?) ms(?:\s+(.*))?$")
 SQL_MESSAGE = re.compile(r"^(statement):\s*(.*)$|^(execute|parse|bind) [^:]+:\s*(.*)$")
 NUMBER = re.compile(r"(?:0[xX][0-9a-fA-F_]+|0[oO][0-7_]+|0[bB][01_]+|(?:[0-9][0-9_]*(?:\.[0-9_]*)?|\.[0-9][0-9_]*)(?:[eE][+-]?[0-9_]+)?)")
@@ -139,7 +139,7 @@ def records(lines):
             if current:
                 yield current
             message = MESSAGE.match(header[3].rstrip("\n"))
-            current = {"stamp": header[1], "timezone": header[2], "body": message[1] if message else "", "continuations": []}
+            current = {"stamp": header[1], "timezone": header[2], "level": message[1] if message else "", "body": message[2] if message else "", "continuations": []}
         elif line.startswith("\t") and current:
             current["continuations"].append(line[1:])
         elif line.strip():
@@ -165,6 +165,8 @@ def summarize(lines, begin=None, end=None, top=50):
     for record in records(lines):
         if record.get("unrecognized_line"):
             unrecognized += 1
+            continue
+        if record["level"] != "LOG":
             continue
         match = DURATION.match(record["body"])
         if not match:

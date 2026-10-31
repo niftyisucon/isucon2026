@@ -45,6 +45,7 @@ class PostgreSQLFingerprintTests(unittest.TestCase):
         text += line("2", "SELECT $1", "bind stmtcache_x")
         text += line("4", "") + "\tSELECT id FROM users\n\tWHERE id=$1\n"
         text += "2026-10-31 06:08:03.126 UTC [101] private@db DETAIL:  parameters: $1='SECRET_PARAMETER'\n"
+        text += "2026-10-31 06:08:03.126 UTC [101] private@db ERROR:  duration: 123 ms  statement: SELECT SECRET_ERROR_BODY\n"
         text += line("1", "SELECT 1", "statement", pid=102)
         text += line("2", "commit", "statement")
         text += "2026-10-31 06:08:03.127 UTC [103] private@db LOG:  duration: 2.000 ms\n"
@@ -64,6 +65,7 @@ class PostgreSQLFingerprintTests(unittest.TestCase):
         self.assertIn("2026-10-31 06:08:00", result["buckets_10s"])
         self.assertFalse(result["complete"])
         self.assertNotIn("SECRET_PARAMETER", str(result))
+        self.assertNotIn("secret_error_body", str(result))
         self.assertNotIn("private_user", str(result))
 
     def test_interval_keeps_sql_continuations_and_includes_end_second(self):
