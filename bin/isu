@@ -21,6 +21,11 @@ Usage: isu <command> [args]
   discover [host...]         構成を調べて hosts/<host>/discovery.md を作る
   setup [host...]            計測ツール導入とログ設定（冪等）
   pull [host...]             /etc の管理対象と webapp をリポジトリへ取り込む
+  pgbadger-setup             ローカルに固定版pgBadgerを導入（Perl・curlが必要）
+  pglog [db-host] [options]  PGログ取得・ローカル集計（HTML・TEXTを.local/へ保存）
+    --begin / --end "YYYY-MM-DD HH:MM:SS"  ログの時刻で解析区間を指定
+    --input-dir DIR          取得済みログを再集計（SSH不要）
+    --output-dir DIR         出力先を指定（既存レポートは上書きしない）
 
 反映
   build                      ローカルでアプリをビルド（ISU_BUILD_CMD）

@@ -51,6 +51,16 @@ owner は担当確定まで `unassigned` なので、反映操作の前に担当
 
 ## 計測・分析ツール
 
+PostgreSQLログは次のCLIで取得し、ローカルのpgBadgerでHTML・TEXTに集計できます。
+
+```bash
+./bin/isu pgbadger-setup    # ローカルに固定版を導入（Perl・curlが必要）
+./bin/isu pglog isu4        # DBログ取得 → ローカル集計
+```
+
+時刻範囲指定、取得済みログの再利用、レポートの見方は [PostgreSQLログの取得・pgBadger集計](docs/pgbadger.md) を参照してください。
+期間指定は解析範囲だけを絞ります。ベンチ直後に1回取得し、以後の再集計は `--input-dir` で同じログを再利用してください（転送し直しません）。
+
 分析ツールの共有設定は `config/` に置きます。ALP の設定は `config/alp.yml` です。
 アプリ3台のログは `/var/log/nginx/access_ltsv.log`、DBのクエリ時間ログは `/var/log/postgresql/postgresql-16-main.log` に出力します。
 リポジトリルートから、設定を標準入力で渡してサーバー上のALPで集計できます（`isu2`、`isu3` も同様）。

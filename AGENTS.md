@@ -87,6 +87,8 @@ cp examples/isu.local.conf .local/isu.local.conf
 | `./bin/isu discover [host...]` | 構成を調査し `hosts/<host>/discovery.md` に保存 |
 | `./bin/isu setup [host...]` | 役割別に計測ツール導入、nginx LTSV ログ・DBクエリ時間ログを設定（冪等） |
 | `./bin/isu pull [host...]` | サーバー設定を `hosts/<host>/`、最初の app ホストのアプリを `webapp/` に取り込む |
+| `./bin/isu pgbadger-setup` | 固定版pgBadgerをローカル `.local/tools/` に導入（Perl・curlが必要） |
+| `./bin/isu pglog [db-host] [--begin 日時] [--end 日時]` | PostgreSQLログ取得・ローカルpgBadger集計。`--input-dir` でSSHなしの再集計も可能 |
 | `./bin/isu build` | `ISU_BUILD_CMD` でローカルビルド。未設定ならスキップ |
 | `./bin/isu deploy [host...] [-f]` | ビルド → rsync → 変更に応じたサービス再起動 |
 | `./bin/isu restart [host...] [-f]` | ホストの役割に応じて nginx reload・DB / app restart |
@@ -94,7 +96,7 @@ cp examples/isu.local.conf .local/isu.local.conf
 | `./bin/isu unlock isu1` | 自分のロックを解放 |
 
 `[host...]` は省略すると全ホスト、指定するとそのホストだけを対象にします（例: `./bin/isu deploy isu2 isu3`）。
-ベンチ実行・分析・スコア管理・Docker による手元検証のコマンドは、この CLI には含めていません。
+PostgreSQLログ分析は `pglog` に含みます。ベンチ実行・スコア管理・Docker による手元検証のコマンドは、この CLI には含めていません。
 
 ## 取り込み後のディレクトリ構成と役割
 
@@ -173,6 +175,7 @@ isucon2026/
 |---|---|---|
 | ALP | nginx 役割のホストで未導入ならインストール。LTSV ログを設定 | `config/alp.yml` と後述の手動集計手順を使用 |
 | PostgreSQL クエリ時間ログ | DB 役割のホストで `log_min_duration_statement = 0` を設定し reload | 現構成の出力先は `/var/log/postgresql/postgresql-16-main.log`。設定後に `SHOW log_min_duration_statement` と実ログを確認する |
+| pgBadger | サーバーの `setup` には含めない。`pgbadger-setup` で固定版をローカルへ導入 | `pglog` でログ取得・集計。出力は `.local/pgbadger/`。期間指定・再集計・確認方法は `docs/pgbadger.md` を参照 |
 | pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
 | unzip | 未導入ならインストール | 導入処理用の補助ツール |
