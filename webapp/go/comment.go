@@ -53,7 +53,9 @@ func canComment(ctx context.Context, db sqlx.QueryerContext, viewerID, postID st
 	if err != nil {
 		return false, err
 	}
-	viewer, err := loadViewerContext(ctx, db, viewerID)
+	// Non-public posts only allow comments from their author or direct friends.
+	// A FoF-only viewer is rejected below even if they can view the post.
+	viewer, err := loadViewerContextWithFoF(ctx, db, viewerID, false, "")
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
