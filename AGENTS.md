@@ -90,7 +90,7 @@ cp examples/isu.local.conf .local/isu.local.conf
 | `./bin/isu setup [host...]` | 役割別に計測ツール導入、nginx LTSV ログ・DBクエリ時間ログを設定（冪等） |
 | `./bin/isu pull [host...]` | サーバー設定を `hosts/<host>/`、最初の app ホストのアプリを `webapp/` に取り込む |
 | `./bin/isu pgbadger-setup` | 固定版pgBadgerをローカル `.local/tools/` に導入（Perl・curlが必要） |
-| `./bin/isu pglog [db-host] [--begin 日時] [--end 日時]` | PostgreSQLログ取得・ローカルpgBadger集計。`--input-dir` でSSHなしの再集計も可能 |
+| `./bin/isu pglog [db-host] [--begin 日時] [--end 日時]` | PostgreSQLログ取得・ローカルpgBadger集計。`--input-dir` で再集計、`--tail-mib N` で継続行を保った部分取得（DB側Python3・UTCログが必要） |
 | `./bin/isu build` | `ISU_BUILD_CMD` でローカルビルド。未設定ならスキップ |
 | `./bin/isu deploy [host...] [-f]` | ビルド → rsync → 変更に応じたサービス再起動 |
 | `./bin/isu restart [host...] [-f]` | ホストの役割に応じて nginx reload・DB / app restart |
