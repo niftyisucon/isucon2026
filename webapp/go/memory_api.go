@@ -113,11 +113,8 @@ func loadMemoryInteractions(ctx context.Context, db sqlx.QueryerContext, items [
 		itemByPostID[items[i].ID] = &items[i]
 	}
 
-	query, args, err := sqlx.In(`AND r.post_id IN (?) ORDER BY r.created_at DESC, r.id DESC`, postIDs)
-	if err != nil {
-		return err
-	}
-	reactions, err := selectCurrentRealMojis(ctx, db, sqlx.Rebind(sqlx.DOLLAR, query), args...)
+	// Bound each post after excluding inactive reactors and non-current rows.
+	reactions, err := selectCurrentRealMojis(ctx, db, memoryReactionConditions, postIDs)
 	if err != nil {
 		return err
 	}
@@ -128,11 +125,7 @@ func loadMemoryInteractions(ctx context.Context, db sqlx.QueryerContext, items [
 		}
 	}
 
-	query, args, err = sqlx.In(`AND c.post_id IN (?) ORDER BY c.created_at, c.id`, postIDs)
-	if err != nil {
-		return err
-	}
-	comments, err := selectCommentsWithAuthor(ctx, db, sqlx.Rebind(sqlx.DOLLAR, query), args...)
+	comments, err := selectCommentsWithAuthor(ctx, db, memoryCommentConditions, postIDs)
 	if err != nil {
 		return err
 	}
@@ -144,3 +137,25 @@ func loadMemoryInteractions(ctx context.Context, db sqlx.QueryerContext, items [
 	}
 	return nil
 }
+
+// Keep each kind in one round trip; the lateral subquery limits each post,
+// not the complete page. The outer helpers retain response and signing logic.
+const memoryReactionConditions = `AND r.id IN (
+ SELECT picked.id FROM unnest($1::text[]) AS selected(post_id)
+ CROSS JOIN LATERAL (
+  SELECT candidate.id FROM realmojis candidate
+  JOIN users actor ON actor.id=candidate.reactor_id AND actor.status='active'
+  WHERE candidate.post_id=selected.post_id AND candidate.replaced_at IS NULL AND candidate.deleted_at IS NULL
+  ORDER BY candidate.created_at DESC, candidate.id DESC LIMIT 50
+ ) picked
+) ORDER BY r.created_at DESC, r.id DESC`
+
+const memoryCommentConditions = `AND c.id IN (
+ SELECT picked.id FROM unnest($1::text[]) AS selected(post_id)
+ CROSS JOIN LATERAL (
+  SELECT candidate.id FROM comments candidate
+  JOIN users actor ON actor.id=candidate.author_id AND actor.status='active'
+  WHERE candidate.post_id=selected.post_id AND candidate.deleted_at IS NULL
+  ORDER BY candidate.created_at, candidate.id LIMIT 50
+ ) picked
+) ORDER BY c.created_at, c.id`
