@@ -83,7 +83,7 @@ func testPostImageTransactionLocal(t *testing.T, fileMode bool) {
 	w.Close()
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
-	h := &HandlerContext{DB: db, Images: NewImageCache()}
+	h := &HandlerContext{DB: db, Images: NewImageCache(imageCacheMaxBytes)}
 	if fileMode {
 		h.Files, err = NewImageStore(t.TempDir())
 		if err != nil {

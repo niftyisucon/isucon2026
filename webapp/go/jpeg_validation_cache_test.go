@@ -217,7 +217,7 @@ func TestJPEGValidationCacheAcrossEdgeAndInitialize(t *testing.T) {
 	}))
 	defer core.Close()
 	edge := echo.New()
-	edge.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: core.URL, EdgeKey: architectureTestKey}, NewImageCache()))
+	edge.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: core.URL, EdgeKey: architectureTestKey}, NewImageCache(imageCacheMaxBytes)))
 	for _, body := range [][]byte{data, bytes.Clone(data), bytes.Clone(data), []byte("invalid")} {
 		req := httptest.NewRequest("PUT", "/api/me/profile-image", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "image/jpeg")

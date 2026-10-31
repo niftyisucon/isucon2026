@@ -93,7 +93,7 @@ func TestEdgeAndCoreShareTrace(t *testing.T) {
 	defer upstream.Close()
 	edge := echo.New()
 	edge.Use(TracingMiddleware())
-	edge.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: upstream.URL, EdgeKey: architectureTestKey}, NewImageCache()))
+	edge.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: upstream.URL, EdgeKey: architectureTestKey}, NewImageCache(imageCacheMaxBytes)))
 	recorder := httptest.NewRecorder()
 	edge.ServeHTTP(recorder, httptest.NewRequest("GET", "/api/me", nil))
 	if recorder.Code != http.StatusOK {
