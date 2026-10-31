@@ -3,9 +3,9 @@ package isureal
 import (
 	"bytes"
 	"context"
-	"log/slog"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -43,6 +43,9 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		http.Error(w, "upstream unavailable", http.StatusBadGateway)
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
+		if err := renderEdgeMemoryResponse(resp, config.EdgeKey); err != nil {
+			return err
+		}
 		if resp.Request.Method == http.MethodPost && resp.Request.URL.Path == "/api/posts" && resp.StatusCode == http.StatusCreated && resp.Header.Get("Content-Encoding") == "" && !resp.Uncompressed {
 			snapshot, _ := resp.Request.Context().Value(edgeCachedContext{}).(edgeCacheSnapshot)
 			if snapshot.upload != nil {
@@ -78,6 +81,7 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		if resp.Request.URL.Path == "/api/initialize" && resp.StatusCode == http.StatusOK {
 			cache.Reset()
 			validatedJPEGs.reset()
+			signedImageURLs.reset()
 		}
 		return nil
 	}
@@ -85,6 +89,10 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		r := c.Request()
 		r.Header.Del(validationHeader)
 		r.Header.Del(cachedImageHeader)
+		r.Header.Del(edgeMemoryHeader)
+		if edgeMemoryRenderingEnabled() && isMemoryRequest(r) {
+			r.Header.Set(edgeMemoryHeader, edgeMAC(config.EdgeKey, "memory-rendering-v1", memoryRequestBinding(r)))
+		}
 		cached, generation := cache.GetGeneration(edgeImageID(r))
 		snapshot := edgeCacheSnapshot{image: cached, generation: generation}
 		if id := edgeImageID(r); id != "" && cached != nil {
