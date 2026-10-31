@@ -213,7 +213,7 @@ func beginRealMojiTx(ctx context.Context, db *sqlx.DB, actor, postID string) (*s
  ), locked AS MATERIALIZED (
    SELECT u.id FROM users u
    WHERE u.status='active' AND (u.id=$1 OR u.id=(SELECT author_id FROM target))
-   ORDER BY u.id FOR NO KEY UPDATE
+   ORDER BY u.id COLLATE "C" FOR NO KEY UPDATE
  )
  SELECT target.author_id, (SELECT count(*) FROM locked) AS locked_count FROM target`, actor, postID)
 	if err != nil {
