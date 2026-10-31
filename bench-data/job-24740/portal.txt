@@ -1,0 +1,25 @@
+Job #24740
+Summary
+ID: 24740
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:49:49.525
+Started At: 2026-10-31 15:49:49.656
+Finished At: 2026-10-31 15:51:23.450
+Result: Finished / Passed
+Marked At: 2026-10-31 15:51:23.450
+Score: 30560
+Score Breakdown: base=30560, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout (excerpts; full text in portal detail)
+time=2026-10-31T06:50:08.320Z asia day1: 18 / europe day1: 7 / america day1: 6
+time=2026-10-31T06:50:43.087Z asia day5: 118 / europe day5: 59 / america day5: 39
+time=2026-10-31T06:51:05.739Z grand prix: asia 63 / europe 46 / america 26
+{
+  "pass": true,
+  "score": 30560,
+  "messages": []
+}
+Verification: portal LIST and detail agree (#24740, 30560); server nginx traffic hump at 06:50–06:51 UTC matches the scenario. This run carried the PR #79 diagnostics captures (see diagnostics/).
