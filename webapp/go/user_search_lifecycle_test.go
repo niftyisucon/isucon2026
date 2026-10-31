@@ -137,3 +137,27 @@ func TestSearchCandidateVolume(t *testing.T) {
 		}
 	}
 }
+
+func TestSearchConcurrentPreparation(t *testing.T) {
+	db, _ := architectureDB(t)
+	mustSQL(t, db, `ALTER TABLE users DROP COLUMN search_username, DROP COLUMN search_display_name`)
+	mustSQL(t, db, `INSERT INTO users(id,username,secret_key_hash,display_name,region) VALUES('owner','owner',repeat('ab',32),'Straße','asia')`)
+	start := make(chan struct{})
+	results := make(chan error, 3)
+	for range 3 {
+		go func() { <-start; results <- prepareUserSearch(t.Context(), db) }()
+	}
+	close(start)
+	for range 3 {
+		if err := <-results; err != nil {
+			t.Fatal(err)
+		}
+	}
+	var key string
+	if err := db.Get(&key, `SELECT search_display_name FROM users WHERE id='owner'`); err != nil {
+		t.Fatal(err)
+	}
+	if key != "strasse" {
+		t.Fatal(key)
+	}
+}

@@ -36,14 +36,23 @@ SELECT id, username, display_name FROM matches ORDER BY username,id`
 // batches; concurrent profile edits cannot be overwritten by an older snapshot.
 // NULL rows stay searchable during a rolling deployment via the Go fallback.
 func prepareUserSearch(ctx context.Context, db *sqlx.DB) error {
-	if _, err := db.ExecContext(ctx, `ALTER TABLE users
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// Serialize catalog changes across simultaneous region process starts.
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(20261031,35)`); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE users
  ADD COLUMN IF NOT EXISTS search_username text,
  ADD COLUMN IF NOT EXISTS search_display_name text`); err != nil {
 		return err
 	}
 	// Old binaries can still update names during a rollout or rollback. Clear
 	// only keys they did not also update, so those rows use the exact fallback.
-	if _, err := db.ExecContext(ctx, `CREATE OR REPLACE FUNCTION invalidate_user_search() RETURNS trigger LANGUAGE plpgsql AS $$
+	if _, err := tx.ExecContext(ctx, `CREATE OR REPLACE FUNCTION invalidate_user_search() RETURNS trigger LANGUAGE plpgsql AS $$
  BEGIN
   IF NEW.username IS DISTINCT FROM OLD.username AND NEW.search_username IS NOT DISTINCT FROM OLD.search_username THEN
    NEW.search_username := NULL;
@@ -60,7 +69,7 @@ func prepareUserSearch(ctx context.Context, db *sqlx.DB) error {
 	var rows []searchCandidate
 	// Recompute all source names, including after a previous binary's reset
 	// (which disables triggers). Only changed keys are written back.
-	if err := db.SelectContext(ctx, &rows, `SELECT id,username,display_name FROM users`); err != nil {
+	if err := tx.SelectContext(ctx, &rows, `SELECT id,username,display_name FROM users`); err != nil {
 		return err
 	}
 	type prepared struct {
@@ -77,7 +86,7 @@ func prepareUserSearch(ctx context.Context, db *sqlx.DB) error {
 		if err != nil {
 			return err
 		}
-		if _, err = db.ExecContext(ctx, `UPDATE users u
+		if _, err = tx.ExecContext(ctx, `UPDATE users u
  SET search_username=v.search_username, search_display_name=v.search_display_name
  FROM jsonb_to_recordset($1::jsonb) AS v(id text, username text, display_name text, search_username text, search_display_name text)
  WHERE u.id=v.id AND u.username=v.username AND u.display_name=v.display_name
@@ -85,5 +94,5 @@ func prepareUserSearch(ctx context.Context, db *sqlx.DB) error {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
