@@ -1,6 +1,7 @@
 package isureal
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"io"
@@ -10,12 +11,25 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
+// This is an allocation hint cap, not a new upload limit. Unknown or larger
+// bodies retain ReadAll's behavior. Reserve MinRead extra bytes so ReadFrom can
+// observe EOF without growing again after an exactly Content-Length body.
+func readProfileImageBody(body io.Reader, contentLength int64) ([]byte, error) {
+	if contentLength <= 0 || contentLength > 32<<20 {
+		return io.ReadAll(body)
+	}
+	var data bytes.Buffer
+	data.Grow(int(contentLength) + bytes.MinRead)
+	_, err := data.ReadFrom(body)
+	return data.Bytes(), err
+}
+
 func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		if c.Request().Header.Get("Content-Type") != "image/jpeg" {
 			return NewAPIError(http.StatusUnsupportedMediaType, "unsupported_media_type")
 		}
-		data, err := io.ReadAll(c.Request().Body)
+		data, err := readProfileImageBody(c.Request().Body, c.Request().ContentLength)
 		if err != nil {
 			return err
 		}
