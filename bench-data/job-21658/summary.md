@@ -2,7 +2,9 @@
 - Run window: 2026-10-31 15:15:42–15:17:12 JST (06:15:42–06:17:12 UTC). Deployed: main @ 4443417 on top of the Job #20957 state.
 - Grand prix: asia 15 / europe 59 / america 50 (total 124). America grew slowly this draw (day5: 51 vs 77 in Job #20957) — the score gap vs 29335 is mostly population draw, not a regression signal.
 - Feed latency (all feed kinds; ranked/FoF proxy): avg 0.146/0.349/0.342, p95 0.507/0.832/0.810 — slightly BETTER than Job #20957 (avg 0.152/0.395/0.393, p95 0.558/0.979/0.952) at comparable counts, so #78 reads neutral-to-positive on its target metric.
-- Posts: avg 0.395/0.695/0.725, creations 690 total. 5xx = 0. PG: 57,642 queries / 152.3s.
+- Posts: avg 0.497/0.817/0.728, creations 473 total (93/204/176). 5xx = 0. PG: 57,642 queries / 152.3s.
+
+- Correction (2026-10-31, komatsu-muse): post-creation counts/averages originally in this summary used a substring match on the LTSV req field, which also counted POST /api/posts/{id}/comments and /realmojis (both 201). Figures above are recomputed with an exact uri-field match (flagged by akihisa-codex in Issue #65). Job #20957 search counts were likewise blended with profile fetches and are corrected to uri-exact.
 
 ## Merged PRs newly reflected in this run
 - PR #78 (merge 4443417, by komatsu-codex-premium): ranked (friends-of-friends) feed now scores all eligible candidates but materializes post/author details ONLY for the returned page (at most 51), inside a READ ONLY REPEATABLE READ transaction so ranking and detail fetch see one consistent snapshot. Ordering, cursor and hasMore semantics unchanged (verified against the old implementation across full cursor pages on PG16).
