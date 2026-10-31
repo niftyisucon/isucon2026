@@ -25,10 +25,15 @@ func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		var posts []struct {
 			Post
-			ImageData []byte `db:"image_data"`
+			ImageData  []byte  `db:"image_data"`
+			StorageKey *string `db:"storage_key"`
+		}
+		extra := ""
+		if h.StorageColumn || h.Files != nil {
+			extra = ", i.storage_key"
 		}
 		if err := h.DB.SelectContext(ctx, &posts, `
-   SELECT `+postColumns+`, i.data AS image_data
+   SELECT `+postColumns+`, i.data AS image_data`+extra+`
    FROM posts p
    JOIN posting_windows w ON w.id = p.posting_window_id
    JOIN image_objects i ON i.id = p.image_id
@@ -48,7 +53,11 @@ func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
 			if err != nil {
 				return err
 			}
-			if _, err := image.Write(post.ImageData); err != nil {
+			data, err := h.imageBytes(post.ImageData, post.StorageKey)
+			if err != nil {
+				return err
+			}
+			if _, err := image.Write(data); err != nil {
 				return err
 			}
 			items = append(items, exportPostResponse{createPostResponse: newPostResponse(post.Post, author), ImagePath: imagePath})

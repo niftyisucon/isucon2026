@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -42,13 +43,16 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
+		_, generation := h.Images.GetGeneration(input.ImageID)
+		metadataOnly := hasCachedImageProof(c.Request(), h.Config.EdgeKey)
 		// 削除状態は毎回確認する。即時反映も5秒以内の許容範囲に含まれる。
 		var object struct {
-			OwnerUserID   string `db:"owner_user_id"`
-			SecretKeyHash string `db:"secret_key_hash"`
-			Visible       bool   `db:"visible"`
-			Data          []byte `db:"data"`
-			MediaType     string `db:"media_type"`
+			OwnerUserID   string  `db:"owner_user_id"`
+			SecretKeyHash string  `db:"secret_key_hash"`
+			Visible       bool    `db:"visible"`
+			Data          []byte  `db:"data"`
+			StorageKey    *string `db:"storage_key"`
+			MediaType     string  `db:"media_type"`
 		}
 		if cached := h.Images.Get(input.ImageID); cached != nil {
 			// 本体はキャッシュにあるので、image_objects（36パーティション）を引かずに所有者と閲覧可否だけを確認する。
@@ -72,18 +76,29 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		} else {
 			// europe/america から DB までは約100msかかるため、署名鍵・閲覧可否・画像本体を1往復で取得する。
 			// image_locations で created_at を引き、image_objects の36パーティションを実行時に1つへ絞る。
-			err = h.DB.GetContext(ctx, &object, imageMissQuery+` AND i.created_at = (SELECT created_at FROM image_locations WHERE id = $1)`, input.ImageID)
+			query := imageMissQuery
+			if h.StorageColumn || h.Files != nil {
+				query = strings.Replace(query, "i.owner_user_id,", "i.storage_key, i.owner_user_id,", 1)
+			}
+			if metadataOnly {
+				query = strings.Replace(query, "CASE WHEN v.visible THEN i.data END", "NULL::bytea", 1)
+			}
+			err = h.DB.GetContext(ctx, &object, query+` AND i.created_at = (SELECT created_at FROM image_locations WHERE id = $1)`, input.ImageID)
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == "42P01" {
 				// image_locations がまだ無い（reset.sql より先にアプリを再起動した）場合は、従来どおり全パーティションを探す。
-				err = h.DB.GetContext(ctx, &object, imageMissQuery, input.ImageID)
+				err = h.DB.GetContext(ctx, &object, query, input.ImageID)
 			} else if errors.Is(err, sql.ErrNoRows) {
 				// 対応表に無い（トリガー導入前の画像など）場合だけ、従来どおり全パーティションを探す。
 				// 対応表にあって行が無い（所有者の退会など）ときは NOT EXISTS が偽になり、探索せずに終わる。
-				err = h.DB.GetContext(ctx, &object, imageMissQuery+` AND NOT EXISTS (SELECT 1 FROM image_locations WHERE id = $1)`, input.ImageID)
+				err = h.DB.GetContext(ctx, &object, query+` AND NOT EXISTS (SELECT 1 FROM image_locations WHERE id = $1)`, input.ImageID)
 			}
-			if err == nil && object.Visible {
-				h.Images.Put(input.ImageID, &cachedImage{OwnerID: object.OwnerUserID, MediaType: object.MediaType, Data: object.Data})
+			if err == nil && object.Visible && !metadataOnly {
+				object.Data, err = h.imageBytes(object.Data, object.StorageKey)
+				if err != nil {
+					return err
+				}
+				h.Images.PutGeneration(input.ImageID, &cachedImage{OwnerID: object.OwnerUserID, MediaType: object.MediaType, Data: object.Data}, generation)
 			}
 		}
 		if errors.Is(err, sql.ErrNoRows) {
@@ -105,6 +120,9 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		if exp <= time.Now().Unix() {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
+		}
+		if metadataOnly {
+			return c.NoContent(http.StatusNoContent)
 		}
 		return c.Blob(http.StatusOK, object.MediaType, object.Data)
 	}

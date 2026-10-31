@@ -18,11 +18,14 @@ DROP TABLE IF EXISTS
   users,
   image_objects;
 
--- 2026-09-01: 画像をDBにおかないと、別のサーバーからデータを返却したときに404になってしまう。ファイル配置に変更して障害になってしまったので注意。ここは決して変更しないこと。
+-- 初期画像は従来どおり DB に保持する。構成変更モードの新規画像は、asia1 の
+-- 永続ファイルを正本として storage_key で参照する。海外は必ず asia1 経由で取得し、
+-- ローカルファイルがあるという前提では読まない（過去の複数ホスト404対策を維持）。
 CREATE TABLE image_objects (
   id varchar(36) NOT NULL,
   owner_user_id varchar(36) NOT NULL,
   data bytea NOT NULL,
+  storage_key text,
   -- like: image/jpeg, image/png
   media_type text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),

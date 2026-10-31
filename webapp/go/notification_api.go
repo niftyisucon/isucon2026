@@ -22,7 +22,12 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 		session := GetSession(c)
 		userID := session.UserID
 		var connectedAt time.Time
-		if err := h.DB.GetContext(ctx, &connectedAt, `SELECT clock_timestamp()`); err != nil {
+		var epoch string
+		if h.Notifications.epochSchema {
+			if err := h.DB.QueryRowContext(ctx, `SELECT clock_timestamp(),generation::text FROM isureal_runtime_state WHERE id=true`).Scan(&connectedAt, &epoch); err != nil {
+				return err
+			}
+		} else if err := h.DB.GetContext(ctx, &connectedAt, `SELECT clock_timestamp()`); err != nil {
 			return err
 		}
 		response := c.Response()
@@ -32,7 +37,7 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 		if err := controller.Flush(); err != nil {
 			return nil
 		}
-		sub := h.Notifications.subscribe(userID, session.Region, connectedAt)
+		sub := h.Notifications.subscribe(userID, session.Region, connectedAt, epoch)
 		defer h.Notifications.unsubscribe(sub)
 		select {
 		case <-ctx.Done():

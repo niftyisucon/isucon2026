@@ -16,15 +16,28 @@ type cachedImage struct {
 }
 
 type ImageCache struct {
-	mu     sync.RWMutex
-	images map[string]*cachedImage
-	bytes  atomic.Int64
+	mu         sync.RWMutex
+	generation uint64
+	images     map[string]*cachedImage
+	bytes      atomic.Int64
 }
 
 func NewImageCache() *ImageCache {
 	return &ImageCache{images: map[string]*cachedImage{}}
 }
 
+func (c *ImageCache) GetGeneration(id string) (*cachedImage, uint64) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.images[id], c.generation
+}
+func (c *ImageCache) PutGeneration(id string, image *cachedImage, generation uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.generation == generation {
+		c.putLocked(id, image)
+	}
+}
 func (c *ImageCache) Get(id string) *cachedImage {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -34,6 +47,13 @@ func (c *ImageCache) Get(id string) *cachedImage {
 func (c *ImageCache) Put(id string, image *cachedImage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.putLocked(id, image)
+}
+
+func (c *ImageCache) putLocked(id string, image *cachedImage) {
+	if len(image.Data) > imageCacheMaxBytes {
+		return
+	}
 	if _, ok := c.images[id]; ok {
 		return
 	}
@@ -49,6 +69,7 @@ func (c *ImageCache) Put(id string, image *cachedImage) {
 func (c *ImageCache) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.generation++
 	c.images = map[string]*cachedImage{}
 	c.bytes.Store(0)
 }

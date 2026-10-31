@@ -1,10 +1,8 @@
 package isureal
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
-	"image/jpeg"
 	"io"
 	"net/http"
 
@@ -21,15 +19,17 @@ func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		img, err := jpeg.Decode(bytes.NewReader(data))
-		if err != nil {
-			c.Set("abuse", "invalid_image")
-			return NewAPIError(http.StatusBadRequest, "invalid_profile_image")
-		}
-		if img.Bounds().Dx() > 512 || img.Bounds().Dy() > 512 {
+		if err := validateJPEG(c, h, data, 512); err != nil {
+			if !errors.Is(err, errImageDimensions) {
+				c.Set("abuse", "invalid_image")
+			}
 			return NewAPIError(http.StatusBadRequest, "invalid_profile_image")
 		}
 
+		prepared, err := h.prepareImage(data)
+		if err != nil {
+			return err
+		}
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
 		tx, err := h.DB.BeginTxx(ctx, nil)
@@ -45,7 +45,7 @@ func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		imageID := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES ($1,$2,$3,'image/jpeg')`, imageID, userID, data); err != nil {
+		if err := h.insertImage(ctx, tx, imageID, userID, prepared, nil); err != nil {
 			return err
 		}
 		h.Images.Put(imageID, &cachedImage{OwnerID: userID, MediaType: "image/jpeg", Data: data})

@@ -17,6 +17,16 @@ import (
 )
 
 func TestPostImageTransactionLocal(t *testing.T) {
+	for _, fileMode := range []bool{false, true} {
+		name := "database"
+		if fileMode {
+			name = "file"
+		}
+		t.Run(name, func(t *testing.T) { testPostImageTransactionLocal(t, fileMode) })
+	}
+}
+
+func testPostImageTransactionLocal(t *testing.T, fileMode bool) {
 	dsn := os.Getenv("ISUCON_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("requires disposable local PostgreSQL")
@@ -73,7 +83,15 @@ func TestPostImageTransactionLocal(t *testing.T) {
 	w.Close()
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
-	e.POST("/posts", createPostHandler(&HandlerContext{DB: db, Images: NewImageCache()}), func(next echo.HandlerFunc) echo.HandlerFunc {
+	h := &HandlerContext{DB: db, Images: NewImageCache()}
+	if fileMode {
+		h.Files, err = NewImageStore(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		h.StorageColumn = true
+	}
+	e.POST("/posts", createPostHandler(h), func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error { c.Set("session", &Session{UserID: "user"}); return next(c) }
 	})
 	post := func() int {
@@ -121,6 +139,12 @@ func TestPostImageTransactionLocal(t *testing.T) {
 		t.Fatalf("created=%d", created)
 	}
 	check(1, 1)
+	if fileMode {
+		var stored bool
+		if err := db.Get(&stored, `SELECT bool_and(storage_key IS NOT NULL AND octet_length(data)=0) FROM image_objects`); err != nil || !stored {
+			t.Fatalf("file metadata not persisted: %v", err)
+		}
+	}
 	exec(`UPDATE posts SET deleted_at=clock_timestamp(); CREATE FUNCTION reject_post() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test failure'; END $$; CREATE TRIGGER reject_post BEFORE INSERT ON posts FOR EACH ROW EXECUTE FUNCTION reject_post()`)
 	if s := post(); s != 500 {
 		t.Fatalf("post insert failure: %d", s)

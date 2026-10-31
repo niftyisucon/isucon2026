@@ -71,8 +71,9 @@ func TestSearchUsersLocal(t *testing.T) {
 		add(fmt.Sprintf("unicode-%d", i), fmt.Sprintf("unicode-%02d", i), display, "active", "certified_public")
 	}
 	for i := 0; i < 130; i++ {
-		// Duplicate usernames exercise the ID tie breaker as well.
-		add(fmt.Sprintf("bulk-%03d", i), fmt.Sprintf("bulk-%03d", i/2), "needle", "active", "regular")
+		// Usernames are unique in the real schema; cursor cases below still
+		// exercise both sides of the (username, id) comparison.
+		add(fmt.Sprintf("bulk-%03d", i), fmt.Sprintf("bulk-%03d", i), "needle", "active", "regular")
 		if i < 60 {
 			blocker, blocked := "viewer", fmt.Sprintf("bulk-%03d", i)
 			if i%2 == 0 {
@@ -153,9 +154,9 @@ func TestSearchUsersLocal(t *testing.T) {
 		count        int
 		more         bool
 	}{
-		{"bulk-039", "bulk-078", 50, true},
-		{"bulk-039", "bulk-079", 50, false},
-		{"bulk-040", "bulk-080", 49, false},
+		{"bulk-079", "bulk-078", 50, true},
+		{"bulk-079", "bulk-079", 50, false},
+		{"bulk-080", "bulk-080", 49, false},
 	} {
 		params := url.Values{"q": {"needle"}, "beforeUsername": {cursor.username}, "beforeId": {cursor.id}}
 		rec := httptest.NewRecorder()
