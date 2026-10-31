@@ -2,6 +2,7 @@ package isureal
 
 import (
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v5"
@@ -25,6 +26,11 @@ func NewAPIError(status int, code string) error {
 func APIErrorHandler(c *echo.Context, err error) {
 	if response, _ := echo.UnwrapResponse(c.Response()); response != nil && response.Committed {
 		return
+	}
+	// nginx may still be forwarding a large upload when an early rejection
+	// closes the upstream connection. Consume it before writing the error.
+	if c.Request().Method == http.MethodPut && c.Request().URL.Path == "/api/me/profile-image" {
+		_, _ = io.Copy(io.Discard, c.Request().Body)
 	}
 	status, message := http.StatusInternalServerError, err.Error()
 	var apiErr *APIError
