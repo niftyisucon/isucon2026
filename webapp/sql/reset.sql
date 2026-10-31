@@ -46,6 +46,28 @@ COMMIT;
 CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
 CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
 CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
+
+-- 画像 id から created_at を引く対応表（Issue #44）。image_objects は created_at で分割されているため、
+-- 画像取得で created_at を与えて実行時に1パーティションへ絞る。初期データ分は初回だけ作成する。
+-- 183万行をランダム順で B-tree に入れると遅いので、索引なしで一括投入してから一意索引を作る。
+CREATE TABLE IF NOT EXISTS image_locations (
+  id varchar(36) NOT NULL,
+  created_at timestamptz NOT NULL
+);
+INSERT INTO image_locations (id, created_at)
+-- 主キーは (id, created_at) なので、念のため id ごとに1行へまとめてから入れる（一意索引の作成で失敗しないように）。
+SELECT DISTINCT ON (id) id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1)
+ORDER BY id, created_at;
+CREATE UNIQUE INDEX IF NOT EXISTS image_locations_id ON image_locations(id);
+CREATE OR REPLACE FUNCTION image_locations_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO image_locations (id, created_at) VALUES (NEW.id, NEW.created_at) ON CONFLICT DO NOTHING;
+  RETURN NULL;
+END;
+$$;
+CREATE OR REPLACE TRIGGER image_locations_insert AFTER INSERT ON image_objects
+FOR EACH ROW EXECUTE FUNCTION image_locations_insert();
+
 -- 認証とログイン時の無効化は有効なセッションだけを検索する。
 CREATE INDEX IF NOT EXISTS login_sessions_active_token_hash ON login_sessions(token_hash) WHERE active = true;
 CREATE INDEX IF NOT EXISTS login_sessions_active_user_id ON login_sessions(user_id) WHERE active = true;

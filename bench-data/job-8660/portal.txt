@@ -1,0 +1,39 @@
+Job #8660
+Summary
+ID: 8660
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 12:34:05.672
+Started At: 2026-10-31 12:34:05.705
+Finished At: 2026-10-31 12:36:14.170
+Result: Finished / Passed
+Marked At: 2026-10-31 12:36:14.170
+Score: 11283
+Score Breakdown: base=11283, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T03:34:35.052Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T03:34:36.845Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T03:34:39.694Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T03:34:43.781Z level=INFO msg="asia 2 日目: 19 人"
+time=2026-10-31T03:34:45.774Z level=INFO msg="europe 2 日目: 7 人"
+time=2026-10-31T03:34:48.745Z level=INFO msg="america 2 日目: 6 人"
+time=2026-10-31T03:34:53.193Z level=INFO msg="asia 3 日目: 28 人"
+time=2026-10-31T03:34:54.810Z level=INFO msg="europe 3 日目: 7 人"
+time=2026-10-31T03:34:57.830Z level=INFO msg="america 3 日目: 6 人"
+time=2026-10-31T03:35:01.929Z level=INFO msg="asia 4 日目: 40 人"
+time=2026-10-31T03:35:04.813Z level=INFO msg="europe 4 日目: 7 人"
+time=2026-10-31T03:35:07.593Z level=INFO msg="america 4 日目: 6 人"
+time=2026-10-31T03:35:14.432Z level=INFO msg="asia 5 日目: 61 人"
+time=2026-10-31T03:35:14.633Z level=INFO msg="europe 5 日目: 7 人"
+time=2026-10-31T03:35:16.708Z level=INFO msg="america 5 日目: 6 人"
+time=2026-10-31T03:35:25.185Z level=INFO msg="europe 最終日（グランプリ）: 7 人"
+time=2026-10-31T03:35:25.520Z level=INFO msg="america 最終日（グランプリ）: 5 人"
+time=2026-10-31T03:35:33.615Z level=INFO msg="グランプリ: アジア 0 人, ヨーロッパ 5 人, アメリカ 4 人"
+{
+  "pass": true,
+  "score": 11283,
+  "messages": []
+}
