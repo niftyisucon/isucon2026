@@ -1,6 +1,7 @@
 package isureal
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"os"
 	"sync"
@@ -21,13 +22,20 @@ type imageURLCacheKey struct {
 
 type imageURLCacheShard struct {
 	mu   sync.RWMutex
-	urls map[imageURLCacheKey]string
+	urls map[imageURLCacheKey]imageURLCacheValue
+}
+
+type imageURLCacheValue struct {
+	url       string
+	signature [sha256.Size]byte
 }
 
 type imageURLCache struct {
-	shards [imageURLCacheShards]imageURLCacheShard
-	hits   atomic.Uint64
-	misses atomic.Uint64
+	shards             [imageURLCacheShards]imageURLCacheShard
+	hits               atomic.Uint64
+	misses             atomic.Uint64
+	verificationHits   atomic.Uint64
+	verificationMisses atomic.Uint64
 }
 
 var signedImageURLs imageURLCache
@@ -35,6 +43,7 @@ var signedImageURLs imageURLCache
 // A/B evaluation can retain diagnostics while disabling this CPU optimization.
 // Read once at process startup, like the trace sampling setting.
 var imageURLCacheEnabled = os.Getenv("ISUREAL_IMAGE_URL_CACHE") != "false"
+var imageVerificationCacheEnabled = os.Getenv("ISUREAL_IMAGE_VERIFY_CACHE") != "false"
 
 func (c *imageURLCache) get(key []byte, id string, exp int64) string {
 	// Production users have a SHA-256 key. Preserve legacy behavior for other
@@ -42,25 +51,50 @@ func (c *imageURLCache) get(key []byte, id string, exp int64) string {
 	if len(key) != sha256.Size {
 		return buildSignedImageURL(key, id, exp)
 	}
+	value, hit := c.getValue(key, id, exp)
+	if hit {
+		c.hits.Add(1)
+	} else {
+		c.misses.Add(1)
+	}
+	return value.url
+}
+
+func (c *imageURLCache) verify(key []byte, id string, exp int64, signature []byte) bool {
+	if len(key) != sha256.Size {
+		return hmac.Equal(signature, imageSignature(key, id, exp))
+	}
+	value, hit := c.getValue(key, id, exp)
+	if hit {
+		c.verificationHits.Add(1)
+	} else {
+		c.verificationMisses.Add(1)
+	}
+	// Only the expected mathematical signature is memoized. Never remember an
+	// authorization result or the untrusted signature supplied by the caller.
+	return hmac.Equal(signature, value.signature[:])
+}
+
+// Both callers pass a SHA-256 key read from the current user state.
+func (c *imageURLCache) getValue(key []byte, id string, exp int64) (imageURLCacheValue, bool) {
 	k := imageURLCacheKey{id: id, exp: exp}
 	copy(k.secret[:], key)
 	shard := &c.shards[k.secret[0]%imageURLCacheShards]
 	shard.mu.RLock()
-	url, ok := shard.urls[k]
+	value, ok := shard.urls[k]
 	shard.mu.RUnlock()
 	if ok {
-		c.hits.Add(1)
-		return url
+		return value, true
 	}
-	c.misses.Add(1)
-	url = buildSignedImageURL(key, id, exp)
+	copy(value.signature[:], imageSignature(key, id, exp))
+	value.url = formatSignedImageURL(id, exp, value.signature[:])
 	shard.mu.Lock()
 	if shard.urls == nil || len(shard.urls) >= imageURLCacheEntriesPerShard {
-		shard.urls = make(map[imageURLCacheKey]string)
+		shard.urls = make(map[imageURLCacheKey]imageURLCacheValue)
 	}
-	shard.urls[k] = url
+	shard.urls[k] = value
 	shard.mu.Unlock()
-	return url
+	return value, false
 }
 
 func (c *imageURLCache) reset() {
@@ -80,5 +114,6 @@ func (c *imageURLCache) stats() map[string]uint64 {
 		entries += uint64(len(shard.urls))
 		shard.mu.RUnlock()
 	}
-	return map[string]uint64{"hits": c.hits.Load(), "misses": c.misses.Load(), "entries": entries}
+	return map[string]uint64{"hits": c.hits.Load(), "misses": c.misses.Load(), "entries": entries,
+		"verification_hits": c.verificationHits.Load(), "verification_misses": c.verificationMisses.Load()}
 }

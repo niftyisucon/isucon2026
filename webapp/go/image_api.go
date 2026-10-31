@@ -1,7 +1,6 @@
 package isureal
 
 import (
-	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
@@ -111,7 +110,7 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		if !hmac.Equal(sig, imageSignature(key, input.ImageID, exp)) {
+		if !verifyImageSignature(key, input.ImageID, exp, sig) {
 			c.Set("abuse", "invalid_signature")
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
