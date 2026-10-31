@@ -6,15 +6,33 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
 
-// Keep the existing concurrency limit and reuse more idle connections.
+// Defaults for each process. The shared core can opt into a capacity experiment;
+// overseas SSE pools retain the existing limit even if they inherit the env.
 const maxDBConnections = 30
 const maxIdleDBConnections = 10
+
+func databaseConnectionLimit(config *Config) int {
+	if config == nil || config.EdgeUpstream != "" || !strings.Contains(config.ListenRegions, ",") {
+		return maxDBConnections
+	}
+	switch os.Getenv("ISUREAL_CORE_DB_MAX_OPEN") {
+	case "", "30":
+		return maxDBConnections
+	case "45":
+		return 45
+	case "60":
+		return 60
+	default:
+		panic("ISUREAL_CORE_DB_MAX_OPEN must be 30, 45 or 60")
+	}
+}
 
 func configureDatabasePool(db *sql.DB) {
 	db.SetMaxOpenConns(maxDBConnections)
@@ -53,6 +71,7 @@ func NewRuntime(config *Config) *Runtime {
 		panic("failed to open database: " + err.Error())
 	}
 	configureDatabasePool(db.DB)
+	db.SetMaxOpenConns(databaseConnectionLimit(config))
 	err = db.Ping()
 	if err != nil {
 		panic("failed to ping database: " + err.Error())
