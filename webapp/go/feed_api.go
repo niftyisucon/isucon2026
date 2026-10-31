@@ -29,6 +29,14 @@ type getFeedResponse struct {
 	HasMore bool               `json:"hasMore"`
 }
 
+// Ranked feeds must score every eligible candidate before applying pagination.
+const rankedFeedConditions = `
+   AND NOT (p.author_id = ANY($4::text[]))
+   AND NOT (p.author_id = ANY($5::text[]))
+   AND p.author_id = ANY($6::text[])
+   AND p.visibility IN ('public', 'friends_of_friends')
+`
+
 func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		var input getFeedRequest
@@ -79,7 +87,10 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
    AND ($2::timestamptz IS NULL OR (p.posted_at, p.id) < ($2, $3))
   `
 		args := []any{viewer.ID, beforePostedAt, beforeID}
-		if !ranked {
+		if ranked {
+			conditions += rankedFeedConditions
+			args = append(args, mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends))
+		} else {
 			conditions += `
    AND NOT (p.author_id = ANY($4::text[]))
    AND (p.visibility = 'public'
