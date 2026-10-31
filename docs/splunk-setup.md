@@ -256,6 +256,76 @@ cp config/splunk/tracing-disabled.conf hosts/isu3/etc/systemd/system/isureal-go.
 ./bin/isu unlock isu1
 ```
 
+## asia1 の CPU と DB プール待ちを切り分ける
+
+実機の採取・反映・ベンチは `komatsu-muse` が担当します。新しい診断口は標準では無効です。
+採取する場合は `config/architecture/isu1/50-diagnostics.conf` を共有プロセスの
+`isureal-go.service.d/50-diagnostics.conf` として通常の反映手順へ組み込みます。
+既存の `40-architecture.conf` と鍵・画像ディレクトリの設定を保持してください。
+旧リージョン別プロセスに同じ診断ポートを追加しません。
+
+`ISUREAL_DIAGNOSTICS_ADDR=127.0.0.1:6060` でループバック上にだけ待ち受けます。
+ワイルドカード・非ループバックIP・ホスト名は起動時に拒否します。
+公開API/nginxへのルート追加はありません。提供するのは次の2つだけです。
+
+- `GET /debug/stats`: PID・時刻・稼働秒数、共用 `sql.DB.Stats()`、GC/割当/実行系の runtime metrics、画像URL署名キャッシュの件数とhit/miss。
+- `GET /debug/pprof/profile?seconds=30`: 1〜30秒のCPUプロファイル。cmdline・heap・goroutine dump・実行トレースは提供しません。
+
+環境変数、DSN、SQL本文、画像ID、利用者ID、HTTPヘッダー・本文は診断JSONへ含めません。
+`WaitCount` と `WaitDuration` はプロセス全体の累積値です。後者のJSON単位は**ナノ秒**です。
+APIトレースの外に見える時間をCPU時間とみなさず、負荷前後でこの値の増分を採ります。
+
+担当者が予約したベンチの開始前から終了後まで、端末Aで1秒間隔の統計を取得します。
+以下の `job-NEW` を対象Job番号に置き換え、保存ディレクトリを作成してから使います。
+
+```bash
+mkdir -p .local/profiles/job-NEW
+```
+
+```bash
+./bin/isu ssh isu1 'for i in $(seq 1 120); do curl --fail --silent --show-error --max-time 2 http://127.0.0.1:6060/debug/stats || exit; sleep 1; done' > .local/profiles/job-NEW/runtime.jsonl
+```
+
+負荷が立ち上がった時間帯に、端末BからCPUを1回採取します。同時に複数のCPUプロファイルを開始しません。
+採取開始・終了UTC、Job、反映commit、PID、人数、採取に伴う負荷も記録します。
+
+```bash
+./bin/isu ssh isu1 'curl --fail --silent --show-error --max-time 35 "http://127.0.0.1:6060/debug/pprof/profile?seconds=30"' > .local/profiles/job-NEW/cpu.pprof
+```
+
+解析はローカルで行います。
+
+```bash
+python3 tools/analyze-runtime-stats.py .local/profiles/job-NEW/runtime.jsonl
+```
+
+```bash
+go tool pprof -top .local/profiles/job-NEW/cpu.pprof
+```
+
+プールの `InUse=MaxOpenConnections` と待ちカウンターの増加が続くならプール待ちを疑います。
+待ち時間の増分は全接続の合計なので、経過時間を超えることがあります。
+WaitCountは待ち開始時、WaitDurationは待ち終了時に更新されるため、短い区間の比をリクエスト平均待ち時間とは呼びません。
+PIDが変わった区間やカウンターが戻った区間は解析ツールが拒否します。
+GC CPUはGo runtimeの推定CPU秒で、ホスト全体のbusy率と直接同一視しません。
+
+APMには `session.lookup`（SQL呼び出し前のプール取得を含む）、`post.bind`、`image.validate`、`image.persist` を追加しています。
+`session.lookup` と配下のSQLとの差にはプール待ちのほかGoの実行待ちやScan等も含まれます。
+エッジからcoreへtraceparentを伝播するため、海外経路も同じtraceで追えます。
+通知SSEの長いHTTPスパンは接続保持時間で、通知の配信遅延ではありません。
+
+画像URLの再利用は、現在の秘密鍵・画像ID・期限秒の完全一致だけを対象に最大16,384件を保持します。
+認可・可視性・画像GETのDB確認は再利用しません。期限を丸めず署名の1,000回反復・出力形式も保持します。
+初期化/通知epoch変更時にキャッシュを空にし、hit/miss累積カウンターは採取期間の差分を取れるよう保持します。
+ローカルの反復ベンチでは100種類のURLを繰り返し、10,000呼び出しごとに期限秒を変えて、
+非キャッシュ約81µs/opに対しキャッシュ約0.86µs/opでした。実機のhit率・CPU削減率・スコア効果は未計測です。
+全呼び出しがmissになる別試験では約83〜85→84〜88µs/op、1,058→約1,377 B/opでした。
+再利用の少ない負荷には割当コストが増えるため、実機のhit率・GCも併せて比較します。
+署名再利用だけを無効にして比較する場合は `ISUREAL_IMAGE_URL_CACHE=false` をプロセス起動前に設定します。
+診断口・APM・プール上限30はそのままで比較でき、設定反映と再起動もMuseが担当します。
+
+参照: [DBStats](https://pkg.go.dev/database/sql#DBStats)、[runtime metrics](https://pkg.go.dev/runtime/metrics)、[CPU profile](https://pkg.go.dev/net/http/pprof#Profile)。
+
 ## 設定と確認範囲
 
 メトリクスは10秒間隔です。Collectorはメモリlimiter 192 MiB、systemd上限384 MiB、低いCPU優先度で動かします。Goの送信キューは2048スパンで、満杯時はリクエスト処理を待たせず破棄します。サンプル外のエラーや遅いリクエストが必ず残る構成ではありません。

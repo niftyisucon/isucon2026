@@ -61,6 +61,17 @@ func run() error {
 		sockets = append(sockets, socket)
 		servers = append(servers, server)
 	}
+	if config.DiagnosticsAddr != "" {
+		server, socket, err := isureal.NewDiagnosticsServer(config.DiagnosticsAddr, runtime.DB.DB)
+		if err != nil {
+			for _, s := range sockets {
+				_ = s.Close()
+			}
+			return err
+		}
+		servers = append(servers, server)
+		sockets = append(sockets, socket)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	failures := make(chan error, len(servers))

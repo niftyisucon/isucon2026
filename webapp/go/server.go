@@ -73,7 +73,10 @@ func NewRuntime(config *Config) *Runtime {
 		}
 	}
 	r.Notifications = newNotificationPoller(db)
-	r.Notifications.onReset = r.Images.Reset
+	r.Notifications.onReset = func() {
+		r.Images.Reset()
+		signedImageURLs.reset()
+	}
 	var eventSchema bool
 	if err = db.Get(&eventSchema, `SELECT count(*)=3 FROM pg_trigger WHERE tgname IN ('isureal_notification_changed','isureal_window_changed','isureal_user_changed') AND tgrelid IN ('notifications'::regclass,'posting_windows'::regclass,'users'::regclass) AND tgenabled='O'`); err != nil {
 		panic(err)

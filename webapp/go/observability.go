@@ -97,6 +97,10 @@ func TracingMiddleware() echo.MiddlewareFunc {
 	}
 }
 
+func startApplicationPhase(ctx context.Context, name string) (context.Context, trace.Span) {
+	return otel.Tracer("isureal/phases").Start(ctx, name)
+}
+
 func openDatabase(config *Config) (*sqlx.DB, error) {
 	if !config.TracingEnabled {
 		return sqlx.Open("pgx", config.DatabaseDSN())

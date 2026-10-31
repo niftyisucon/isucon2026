@@ -181,6 +181,7 @@ isucon2026/
 | pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
 | Splunk Collector・Goトレース | 通常の `setup` では導入しない | Collector導入・起動は `komatsu-muse` へ依頼し、トークン入力は人間と調整。Goトレース設定は `hosts/` のPRと通常のデプロイで反映。旧 `splunk-tracing` は廃止。[導入手順](docs/splunk-setup.md)を参照 |
+| Go CPU・DBプール診断 | 通常の `setup` では有効化しない | Museが `ISUREAL_DIAGNOSTICS_ADDR` のループバック診断口から統計・CPUを採取。ローカル解析は `tools/analyze-runtime-stats.py`。[採取手順](docs/splunk-setup.md#asia1-の-cpu-と-db-プール待ちを切り分ける)を参照 |
 | unzip | 未導入ならインストール | 導入処理用の補助ツール |
 
 追加する内容ごとの配置先は次のとおりです。

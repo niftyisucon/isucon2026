@@ -48,8 +48,11 @@ type createPostResponse struct {
 func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		var input createPostRequest
-		if err := c.Bind(&input); err != nil {
-			return err
+		_, bindSpan := startApplicationPhase(c.Request().Context(), "post.bind")
+		bindErr := c.Bind(&input)
+		bindSpan.End()
+		if bindErr != nil {
+			return bindErr
 		}
 		if input.Image == nil || !validUserText(input.Caption, 0, 1000) {
 			return NewAPIError(http.StatusBadRequest, "invalid_post")
@@ -79,7 +82,7 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_post")
 		}
 
-		prepared, err := h.prepareImage(imageData)
+		prepared, err := h.prepareImage(c.Request().Context(), imageData)
 		if err != nil {
 			return err
 		}

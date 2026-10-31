@@ -50,6 +50,8 @@ func decodeJPEG(data []byte, limit int) error {
 	return nil
 }
 func validateJPEG(c *echo.Context, h *HandlerContext, data []byte, limit int) error {
+	_, span := startApplicationPhase(c.Request().Context(), "image.validate")
+	defer span.End()
 	key := ""
 	if h.Config != nil {
 		key = h.Config.EdgeKey
