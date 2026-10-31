@@ -359,6 +359,7 @@ func (r createPostResponse) ImageURLID() string {
 }
 
 func TestNotificationCommitRollbackAndRegionChange(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	db, dsn := architectureDB(t)
 	fixtureOwner(t, db)
 	p := newNotificationPoller(db)
@@ -510,6 +511,7 @@ func TestImageMissingFileCannotBecomeEmptySuccess(t *testing.T) {
 }
 
 func TestNotificationInitializeGenerationPreservesNewSubscribers(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	db, dsn := architectureDB(t)
 	fixtureOwner(t, db)
 	mustSQL(t, db, `INSERT INTO posting_windows(id,region,local_date,starts_at,on_time_deadline) VALUES('w','europe','2026-10-31',clock_timestamp(),clock_timestamp())`)

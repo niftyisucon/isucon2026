@@ -113,6 +113,7 @@ func checkWindowRecipients(t *testing.T, db *sqlx.DB, response *httptest.Respons
 }
 
 func TestPostingWindowRegionLock(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	db, _ := architectureDB(t)
 	e := windowLockApp(db)
 	mustSQL(t, db, `INSERT INTO users(id,username,display_name,secret_key_hash,region,status) VALUES
@@ -167,6 +168,7 @@ func TestPostingWindowRegionLock(t *testing.T) {
 }
 
 func TestPostingMembershipBeforeWindow(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	for _, operation := range []string{"register", "move", "delete"} {
 		t.Run(operation, func(t *testing.T) {
 			db, _ := architectureDB(t)
@@ -234,6 +236,7 @@ func TestPostingWindowConcurrentStarts(t *testing.T) {
 }
 
 func TestPostingWindowWaitsForInFlightPost(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	db, _ := architectureDB(t)
 	e := windowLockApp(db)
 	mustSQL(t, db, `INSERT INTO users(id,username,display_name,secret_key_hash,region) VALUES('actor','actor','Actor',repeat('ab',32),'asia')`)

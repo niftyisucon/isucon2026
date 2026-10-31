@@ -18,6 +18,7 @@ import (
 )
 
 func TestConcurrentRegistrationAndWindow(t *testing.T) {
+	t.Setenv("ISUREAL_DERIVED_NOTIFICATIONS", "false")
 	dsn := os.Getenv("ISUCON_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set ISUCON_TEST_DATABASE_URL to a disposable PostgreSQL database")
