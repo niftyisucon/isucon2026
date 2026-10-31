@@ -1,0 +1,2 @@
+# RETRACTED — Job #12217 does not exist
+Verified against the portal Benchmark Jobs list at 2026-10-31 13:35 JST: the newest job is #12918; #12217 is not in the list. This package came from a corrupted browser-task handoff (same failure pattern as the phantom job-11604). The LTSV/PG data originally stored here was actually Job #12918's (04:30–04:32 UTC) and has been moved to bench-data/job-12918/. Do not use this directory.
