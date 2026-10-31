@@ -55,6 +55,11 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
+		// The query below excludes the viewer's own posts, so canView always
+		// rejects every candidate until the viewer has posted today.
+		if !viewer.HasPostedToday {
+			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
+		}
 		following := map[string]bool{}
 		if input.Feed == "following" {
 			var followeeIDs []string
@@ -69,11 +74,31 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 		if ranked {
 			beforePostedAt, beforeID = nil, ""
 		}
-		posts, err := selectPostsWithAuthor(ctx, h.DB, `
+		conditions := `
    AND p.author_id <> $1 AND w.ended_at IS NULL
    AND ($2::timestamptz IS NULL OR (p.posted_at, p.id) < ($2, $3))
+  `
+		args := []any{viewer.ID, beforePostedAt, beforeID}
+		if !ranked {
+			conditions += `
+   AND NOT (p.author_id = ANY($4::text[]))
+   AND (p.visibility = 'public'
+        OR (p.visibility = 'friends' AND p.author_id = ANY($5::text[]))
+        OR (p.visibility = 'friends_of_friends' AND
+            (p.author_id = ANY($5::text[]) OR p.author_id = ANY($6::text[]))))
+   AND ($7::text = 'public' AND p.visibility = 'public'
+        OR $7 = 'friends' AND p.author_id = ANY($5::text[])
+        OR $7 = 'following' AND p.author_id = ANY($8::text[]))
+  `
+			args = append(args, mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends), input.Feed, mapKeys(following))
+		}
+		conditions += `
    ORDER BY p.posted_at DESC, p.id DESC
-  `, viewer.ID, beforePostedAt, beforeID)
+  `
+		if !ranked {
+			conditions += ` LIMIT 51`
+		}
+		posts, err := selectPostsWithAuthor(ctx, h.DB, conditions, args...)
 		if err != nil {
 			return err
 		}
@@ -113,6 +138,16 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		return c.JSON(http.StatusOK, getFeedResponse{Items: items, HasMore: hasMore})
 	}
+}
+
+func mapKeys(values map[string]bool) []string {
+	keys := make([]string, 0, len(values))
+	for key, enabled := range values {
+		if enabled {
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
 func rankedBefore(score int64, post Post, beforeScore int64, beforePostedAt time.Time, beforeID string) bool {
