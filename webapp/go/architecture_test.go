@@ -175,7 +175,7 @@ func localRuntime(t *testing.T, db *sqlx.DB, dir string) *Runtime {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := &Runtime{DB: db, Files: files, StorageColumn: true, Images: NewImageCache(), IPBans: &IPBanList{}, Notifications: newNotificationPoller(db)}
+	r := &Runtime{DB: db, Files: files, StorageColumn: true, Images: NewImageCache(imageCacheMaxBytes), IPBans: &IPBanList{}, Notifications: newNotificationPoller(db)}
 	t.Cleanup(r.Notifications.close)
 	return r
 }
@@ -221,7 +221,7 @@ func TestArchitectureImagesAcrossEdgeRestartAndReset(t *testing.T) {
 	cfg := &Config{Region: "europe", EdgeKey: architectureTestKey}
 	central := httptest.NewServer(NewRegionServer(cfg, runtime))
 	defer central.Close()
-	edgeCache := NewImageCache()
+	edgeCache := NewImageCache(imageCacheMaxBytes)
 	edgeEcho := echo.New()
 	edgeEcho.HTTPErrorHandler = APIErrorHandler
 	edgeEcho.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: central.URL, EdgeKey: architectureTestKey}, edgeCache))
@@ -440,7 +440,7 @@ func TestListenerConfiguration(t *testing.T) {
 }
 
 func TestEdgeCacheRevalidatesWithoutTransferringBodyAndPinsEvictedBytes(t *testing.T) {
-	cache := NewImageCache()
+	cache := NewImageCache(imageCacheMaxBytes)
 	data := jpegFixture(t, 16)
 	var mu sync.Mutex
 	fullBodies, checks := 0, 0
@@ -484,7 +484,7 @@ func TestEdgeCacheRevalidatesWithoutTransferringBodyAndPinsEvictedBytes(t *testi
 }
 
 func TestCacheResetDiscardsInflightFill(t *testing.T) {
-	cache := NewImageCache()
+	cache := NewImageCache(imageCacheMaxBytes)
 	_, generation := cache.GetGeneration("initial")
 	cache.Reset()
 	cache.PutGeneration("initial", &cachedImage{Data: []byte("old")}, generation)

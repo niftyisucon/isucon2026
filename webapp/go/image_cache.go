@@ -8,6 +8,14 @@ import (
 // 画像の本体・所有者・形式は作成後に変わらず、id も UUID で再利用されないため、アプリ内に保持する。
 // 閲覧可否（削除・退会・置き換え）は毎回 DB で確認するので、ここには載せない。
 const imageCacheMaxBytes = 256 << 20
+const edgeImageCacheMaxBytes = 1 << 30
+
+func imageCacheLimit(config *Config) int64 {
+	if config.EdgeUpstream != "" {
+		return edgeImageCacheMaxBytes
+	}
+	return imageCacheMaxBytes
+}
 
 type cachedImage struct {
 	OwnerID   string
@@ -20,10 +28,11 @@ type ImageCache struct {
 	generation uint64
 	images     map[string]*cachedImage
 	bytes      atomic.Int64
+	maxBytes   int64
 }
 
-func NewImageCache() *ImageCache {
-	return &ImageCache{images: map[string]*cachedImage{}}
+func NewImageCache(maxBytes int64) *ImageCache {
+	return &ImageCache{images: map[string]*cachedImage{}, maxBytes: maxBytes}
 }
 
 func (c *ImageCache) GetGeneration(id string) (*cachedImage, uint64) {
@@ -51,14 +60,14 @@ func (c *ImageCache) Put(id string, image *cachedImage) {
 }
 
 func (c *ImageCache) putLocked(id string, image *cachedImage) {
-	if len(image.Data) > imageCacheMaxBytes {
+	if int64(len(image.Data)) > c.maxBytes {
 		return
 	}
 	if _, ok := c.images[id]; ok {
 		return
 	}
-	// 上限を超えたら丸ごと捨てる（ベンチ1回分の画像は数十MB程度で、通常は到達しない）。
-	if c.bytes.Load()+int64(len(image.Data)) > imageCacheMaxBytes {
+	// 上限を超えたら丸ごと捨てる。
+	if c.bytes.Load()+int64(len(image.Data)) > c.maxBytes {
 		c.images = map[string]*cachedImage{}
 		c.bytes.Store(0)
 	}

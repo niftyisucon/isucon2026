@@ -77,7 +77,7 @@ func NewRuntime(config *Config) *Runtime {
 		panic("failed to ping database: " + err.Error())
 	}
 
-	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache()}
+	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache(imageCacheLimit(config))}
 	if sessionCacheEnabled(config) {
 		r.Sessions = newSessionCache()
 	}

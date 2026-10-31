@@ -3,10 +3,12 @@ package isureal
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -18,11 +20,13 @@ type edgeCachedContext struct{}
 type edgeCacheSnapshot struct {
 	image      *cachedImage
 	generation uint64
+	upload     []byte
 }
 
 const edgeMaxBody = 32 << 20
 
 func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
+	uploadImageCache := os.Getenv("ISUREAL_EDGE_UPLOAD_IMAGE_CACHE") != "false"
 	target, err := url.Parse(config.EdgeUpstream)
 	if err != nil || target.Scheme != "http" || target.Host == "" || target.Path != "" || target.RawQuery != "" || target.User != nil {
 		panic("invalid edge upstream")
@@ -37,6 +41,12 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		http.Error(w, "upstream unavailable", http.StatusBadGateway)
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
+		if resp.Request.Method == http.MethodPost && resp.Request.URL.Path == "/api/posts" && resp.StatusCode == http.StatusCreated && resp.Header.Get("Content-Encoding") == "" && !resp.Uncompressed {
+			snapshot, _ := resp.Request.Context().Value(edgeCachedContext{}).(edgeCacheSnapshot)
+			if snapshot.upload != nil {
+				cacheUploadedPostImage(resp, cache, snapshot)
+			}
+		}
 		id := edgeImageID(resp.Request)
 		if id != "" {
 			snapshot, _ := resp.Request.Context().Value(edgeCachedContext{}).(edgeCacheSnapshot)
@@ -74,7 +84,7 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		r.Header.Del(validationHeader)
 		r.Header.Del(cachedImageHeader)
 		cached, generation := cache.GetGeneration(edgeImageID(r))
-		r = r.WithContext(context.WithValue(r.Context(), edgeCachedContext{}, edgeCacheSnapshot{cached, generation}))
+		snapshot := edgeCacheSnapshot{image: cached, generation: generation}
 		if id := edgeImageID(r); id != "" && cached != nil {
 			r.Header.Set(cachedImageHeader, edgeMAC(config.EdgeKey, "cached-image", r.URL.RequestURI()))
 		}
@@ -101,8 +111,11 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 					defer clone.MultipartForm.RemoveAll()
 					f, _, err := clone.FormFile("image")
 					if err == nil {
-						data, _ = io.ReadAll(f)
+						data, err = io.ReadAll(f)
 						f.Close()
+						if err != nil {
+							data = nil
+						}
 					} else {
 						data = nil
 					}
@@ -112,13 +125,45 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 			}
 			if data != nil && decodeJPEG(data, limit) == nil {
 				r.Header.Set(validationHeader, edgeMAC(config.EdgeKey, "jpeg", imageValidationValue(data, limit)))
+				if uploadImageCache && r.Method == http.MethodPost && r.URL.Path == "/api/posts" {
+					// createPostHandler persists these exact multipart bytes without re-encoding.
+					snapshot.upload = data
+				}
 			}
 		}
+		r = r.WithContext(context.WithValue(r.Context(), edgeCachedContext{}, snapshot))
 		// Keep edge and core in the same sampled trace. Do not record URL IDs,
 		// request bodies, credentials or the internal validation headers.
 		propagation.TraceContext{}.Inject(r.Context(), propagation.HeaderCarrier(r.Header))
 		proxy.ServeHTTP(c.Response(), r)
 		return nil
+	}
+}
+
+func cacheUploadedPostImage(resp *http.Response, cache *ImageCache, snapshot edgeCacheSnapshot) {
+	body := resp.Body
+	data, err := io.ReadAll(io.LimitReader(body, edgeMaxBody+1))
+	// Replay the original bytes, including any unread suffix if inspection failed
+	// or exceeded the limit. Cache population must never reject a successful post.
+	resp.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.MultiReader(bytes.NewReader(data), body), body}
+	if err != nil || len(data) > edgeMaxBody {
+		return
+	}
+	var posted struct {
+		ImageURL string `json:"imageUrl"`
+	}
+	if json.Unmarshal(data, &posted) != nil {
+		return
+	}
+	u, err := url.Parse(posted.ImageURL)
+	if err != nil || u.IsAbs() || u.Host != "" || u.Fragment != "" {
+		return
+	}
+	if id := edgeImageID(&http.Request{Method: http.MethodGet, URL: u}); id != "" {
+		cache.PutGeneration(id, &cachedImage{MediaType: "image/jpeg", Data: snapshot.upload}, snapshot.generation)
 	}
 }
 
