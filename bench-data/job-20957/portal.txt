@@ -1,0 +1,26 @@
+Job #20957
+Summary
+ID: 20957
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:08:03.060
+Started At: 2026-10-31 15:08:03.439
+Finished At: 2026-10-31 15:09:34.594
+Result: Finished / Passed
+Marked At: 2026-10-31 15:09:34.594
+Score: 29335
+Score Breakdown: base=29335, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout (excerpts; full text in portal detail)
+time=2026-10-31T06:08:22.716Z asia day1: 18 / europe day1: 7 / america day1: 6
+time=2026-10-31T06:08:58.433Z europe day5: 62 / america day5: 77
+time=2026-10-31T06:09:18.934Z grand prix: asia 16 / europe 61 / america 76
+(two users moved regions mid-run: ruko-5146 america->europe->asia->america, eltor5470 america->europe)
+{
+  "pass": true,
+  "score": 29335,
+  "messages": []
+}
+Verification: portal LIST and detail agree (#20957, 29335); server nginx traffic hump at 06:08 UTC matches the scenario.
