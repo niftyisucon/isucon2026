@@ -101,12 +101,10 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusConflict, "username_taken")
 		}
 		userID := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `INSERT INTO users (id, username, secret_key_hash, display_name, region) VALUES ($1, $2, $3, $4, $5)`,
+		var user User
+		if err := tx.GetContext(ctx, &user, `INSERT INTO users (id, username, secret_key_hash, display_name, region) VALUES ($1, $2, $3, $4, $5)
+  RETURNING id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status`,
 			userID, input.Username, hex.EncodeToString(hash[:]), input.DisplayName, input.Region); err != nil {
-			return err
-		}
-		user, err := getUser(ctx, tx, userID)
-		if err != nil {
 			return err
 		}
 		if err := tx.Commit(); err != nil {
