@@ -1,0 +1,14 @@
+# isu-recon で matching_groups を埋める（パスパラメータをまとめる）
+sort: sum
+reverse: true
+format: markdown
+limit: 5000
+output: count,1xx,2xx,3xx,4xx,5xx,method,uri,min,max,sum,avg,p99
+ltsv:
+  apptime_label: apptime
+matching_groups: []
+# 例（ISUCON14）:
+# matching_groups:
+#   - ^/api/app/rides/[^/]+/evaluation$
+#   - ^/api/chair/rides/[^/]+/status$
+#   - ^/assets/

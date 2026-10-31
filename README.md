@@ -47,3 +47,8 @@ cp examples/isu.local.conf .local/isu.local.conf
 `-f` / `--force` で owner・本番チェックを省略できます。
 
 コマンドの詳細は `./bin/isu help`、競技中の作業方針とディレクトリ構成は [AGENTS.md](AGENTS.md) を参照してください。
+
+## 計測・分析ツール
+
+分析ツールの共有設定は `config/` に置きます。ALP の設定は `config/alp.yml` です。
+現在のツール一覧、追加時の配置先と CLI 化の方針は [AGENTS.md の計測・分析ツールの追加方針](AGENTS.md#計測分析ツールの追加方針)、ALP の実行手順は [ALP の設定と使い方](AGENTS.md#alp-の設定と使い方) を参照してください。
