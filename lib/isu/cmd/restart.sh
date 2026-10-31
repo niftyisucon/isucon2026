@@ -18,7 +18,12 @@ restart_services() {
       nginx) has_role "$h" nginx && cmds="$cmds sudo nginx -t -q && sudo systemctl reload nginx &&" ;;
       db) has_role "$h" db && cmds="$cmds sudo systemctl restart $ISU_DB_SERVICE &&" ;;
       systemd) cmds="$cmds sudo systemctl daemon-reload &&" ;;
-      app) has_role "$h" app && cmds="$cmds sudo systemctl restart $ISU_APP_SERVICES &&" ;;
+      app)
+        local extra
+        extra=$(host_attr "$h" app_services)
+        # ホスト固有の追加サービスは、追試の再起動後も上がるよう enable してから restart する
+        [ -n "$extra" ] && cmds="$cmds sudo systemctl enable -q $extra &&"
+        has_role "$h" app && cmds="$cmds sudo systemctl restart $ISU_APP_SERVICES $extra &&" ;;
     esac
   done
   [ -n "$cmds" ] || return 0
