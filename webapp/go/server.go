@@ -9,10 +9,11 @@ import (
 )
 
 type HandlerContext struct {
-	DB     *sqlx.DB
-	Config *Config
-	IPBans *IPBanList
-	Images *ImageCache
+	DB            *sqlx.DB
+	Config        *Config
+	IPBans        *IPBanList
+	Images        *ImageCache
+	Notifications *notificationPoller
 }
 
 func NewServer(config *Config) *echo.Echo {
@@ -45,6 +46,7 @@ func NewServer(config *Config) *echo.Echo {
 		IPBans: &IPBanList{},
 		Images: NewImageCache(),
 	}
+	handlerContext.Notifications = newNotificationPoller(db)
 	e.Use(IPBanMiddleware(handlerContext))
 
 	e.POST("/api/initialize", initializeHandler(handlerContext))
