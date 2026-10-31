@@ -121,6 +121,7 @@ CREATE TABLE friendships (
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE(user_low_id,user_high_id)
 );
+CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
 
 CREATE TABLE follows (
   id varchar(36) PRIMARY KEY,
@@ -168,6 +169,7 @@ CREATE TABLE posts (
 );
 CREATE INDEX posts_author_id ON posts(author_id);
 CREATE INDEX posts_posting_window_id ON posts(posting_window_id);
+CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
 
 CREATE TABLE friend_requests (
   id varchar(36) PRIMARY KEY,
@@ -190,6 +192,7 @@ CREATE TABLE realmojis (
 );
 CREATE UNIQUE INDEX realmojis_one_active ON realmojis(post_id,reactor_id) WHERE replaced_at IS NULL AND deleted_at IS NULL;
 CREATE INDEX realmojis_post_id ON realmojis(post_id);
+CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
 
 CREATE TABLE comments (
   id varchar(36) PRIMARY KEY,
