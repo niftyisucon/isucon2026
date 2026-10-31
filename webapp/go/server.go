@@ -63,6 +63,7 @@ type Runtime struct {
 	StorageColumn bool
 	Notifications *notificationPoller
 	Sessions      *sessionCache
+	Admission     *coreAdmission
 }
 
 func NewRuntime(config *Config) *Runtime {
@@ -77,7 +78,7 @@ func NewRuntime(config *Config) *Runtime {
 		panic("failed to ping database: " + err.Error())
 	}
 
-	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache(imageCacheLimit(config))}
+	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache(imageCacheLimit(config)), Admission: newCoreAdmission(config)}
 	if sessionCacheEnabled(config) {
 		r.Sessions = newSessionCache()
 	}
@@ -146,6 +147,7 @@ func NewRegionServer(config *Config, r *Runtime) *echo.Echo {
 		e.Any("/api/*", newEdgeProxy(config, r.Images))
 		return e
 	}
+	e.Use(coreAdmissionMiddleware(r.Admission, config.Region))
 	e.Use(IPBanMiddleware(handlerContext))
 
 	e.POST("/api/initialize", initializeHandler(handlerContext))

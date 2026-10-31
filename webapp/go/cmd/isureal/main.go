@@ -62,7 +62,7 @@ func run() error {
 		servers = append(servers, server)
 	}
 	if config.DiagnosticsAddr != "" {
-		server, socket, err := isureal.NewDiagnosticsServer(config.DiagnosticsAddr, runtime.DB.DB)
+		server, socket, err := isureal.NewDiagnosticsServer(config.DiagnosticsAddr, runtime.DB.DB, runtime.Admission)
 		if err != nil {
 			for _, s := range sockets {
 				_ = s.Close()

@@ -28,18 +28,35 @@ func getRankedFeed(ctx context.Context, db *sqlx.DB, viewerID string, input getF
 	if !viewer.HasPostedToday {
 		return getFeedResponse{Items: []feedItemResponse{}}, nil
 	}
-	response, err := selectRankedPage(ctx, tx, viewer, input)
+	page, err := selectRankedPageData(ctx, tx, viewer, input)
 	if err != nil {
 		return getFeedResponse{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return getFeedResponse{}, err
 	}
-	return response, nil
+	// All author keys, visibility and scores have been read in the snapshot.
+	// Signing up to 50 URLs must not keep a DB connection checked out.
+	return page.response(), nil
 }
 
-func selectRankedPage(ctx context.Context, db *sqlx.Tx, viewer viewerContext, input getFeedRequest) (getFeedResponse, error) {
-	response := getFeedResponse{Items: []feedItemResponse{}}
+type rankedPage struct {
+	posts   []PostWithAuthor
+	scores  map[string]int64
+	hasMore bool
+}
+
+func (p rankedPage) response() getFeedResponse {
+	response := getFeedResponse{Items: []feedItemResponse{}, HasMore: p.hasMore}
+	for _, post := range p.posts {
+		score := p.scores[post.ID]
+		response.Items = append(response.Items, feedItemResponse{createPostResponse: newPostResponse(post.Post, post.Author), Score: &score})
+	}
+	return response
+}
+
+func selectRankedPageData(ctx context.Context, db *sqlx.Tx, viewer viewerContext, input getFeedRequest) (rankedPage, error) {
+	page := rankedPage{}
 	// recommendationScores only needs ID and AuthorID; PostedAt provides the
 	// existing tie-break/cursor order. No candidate limit before scoring.
 	var candidates []PostWithAuthor
@@ -50,11 +67,11 @@ func selectRankedPage(ctx context.Context, db *sqlx.Tx, viewer viewerContext, in
  WHERE p.deleted_at IS NULL AND w.ended_at IS NULL AND p.author_id<>$1
  AND ($2::timestamptz IS NULL OR (p.posted_at,p.id)<($2,$3))
  `+rankedFeedConditions+` ORDER BY p.posted_at DESC,p.id DESC`, viewer.ID, nil, "", mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends)); err != nil {
-		return response, err
+		return page, err
 	}
 	scores, err := rankedRecommendationScores(ctx, db, viewer, candidates)
 	if err != nil {
-		return response, err
+		return page, err
 	}
 	sort.SliceStable(candidates, func(i, j int) bool { return scores[candidates[i].ID] > scores[candidates[j].ID] })
 	ids := make([]string, 0, 51)
@@ -68,24 +85,24 @@ func selectRankedPage(ctx context.Context, db *sqlx.Tx, viewer viewerContext, in
 		}
 	}
 	if len(ids) == 0 {
-		return response, nil
+		return page, nil
 	}
 	posts, err := selectPostsWithAuthor(ctx, db, `AND p.id=ANY($1)`, ids)
 	if err != nil {
-		return response, err
+		return page, err
 	}
 	byID := make(map[string]PostWithAuthor, len(posts))
 	for _, p := range posts {
 		byID[p.ID] = p
 	}
-	response.HasMore = len(ids) > 50
+	page.hasMore = len(ids) > 50
+	page.scores = scores
 	for _, id := range ids[:min(50, len(ids))] {
 		p, ok := byID[id]
 		if !ok {
-			return response, errors.New("ranked candidate missing from snapshot")
+			return page, errors.New("ranked candidate missing from snapshot")
 		}
-		score := scores[id]
-		response.Items = append(response.Items, feedItemResponse{createPostResponse: newPostResponse(p.Post, p.Author), Score: &score})
+		page.posts = append(page.posts, p)
 	}
-	return response, nil
+	return page, nil
 }

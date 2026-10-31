@@ -13,6 +13,77 @@ import (
 )
 
 // Preserve the pre-change full-detail path as an independent differential oracle.
+func selectRankedPage(ctx context.Context, db *sqlx.Tx, viewer viewerContext, input getFeedRequest) (getFeedResponse, error) {
+	page, err := selectRankedPageData(ctx, db, viewer, input)
+	return page.response(), err
+}
+
+func TestRankedSigningReturnsConnectionBeforeFormatting(t *testing.T) {
+	if !imageURLCacheEnabled {
+		t.Skip("requires the signature cache lock to pause formatting")
+	}
+	db, _ := architectureDB(t)
+	mustSQL(t, db, `INSERT INTO users(id,username,secret_key_hash,display_name,region)
+ SELECT 'u'||n,'u'||n,repeat('ab',32),'User '||n,'asia' FROM generate_series(0,2) n`)
+	mustSQL(t, db, `INSERT INTO posting_windows(id,region,local_date,starts_at,on_time_deadline)
+ VALUES('w','asia',current_date,now(),now()+interval '1 hour')`)
+	mustSQL(t, db, `INSERT INTO posts(id,author_id,posting_window_id,image_id,visibility,location_kind,posted_at)
+	 VALUES('own','u0','w','own-image','public','none',now()),('target','u2','w','target-image','public','none',now())`)
+	mustSQL(t, db, `INSERT INTO friendships(id,user_low_id,user_high_id) VALUES('direct','u0','u1'),('fof','u1','u2')`)
+	db.SetMaxOpenConns(1)
+	// Prevent the formatter from finishing, independently of how fast HMAC is.
+	shard := &signedImageURLs.shards[0xab%imageURLCacheShards]
+	shard.mu.Lock()
+	locked := true
+	defer func() {
+		if locked {
+			shard.mu.Unlock()
+		}
+	}()
+	held, err := db.Conn(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer held.Close()
+	before := db.Stats().WaitCount
+	type result struct {
+		response getFeedResponse
+		err      error
+	}
+	done := make(chan result, 1)
+	go func() {
+		response, err := getRankedFeed(t.Context(), db, "u0", getFeedRequest{Feed: "friends-of-friends"})
+		done <- result{response, err}
+	}()
+	waitAdmission(t, func() bool { return db.Stats().WaitCount > before })
+	held.Close() // the queued feed request now owns the only connection
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("formatting retained the only DB connection: %v", err)
+	}
+	conn.Close()
+	select {
+	case r := <-done:
+		t.Fatalf("expected to be paused in signing: %+v", r)
+	default:
+	}
+	// A writer must also progress while signing is paused. The already-selected
+	// page keeps its snapshot; the next request must observe this deletion.
+	mustSQL(t, db, `UPDATE posts SET deleted_at=clock_timestamp() WHERE id='target'`)
+	shard.mu.Unlock()
+	locked = false
+	r := <-done
+	if r.err != nil || len(r.response.Items) != 1 || r.response.Items[0].ID != "target" {
+		t.Fatalf("snapshot page changed during formatting: %+v", r)
+	}
+	next, err := getRankedFeed(t.Context(), db, "u0", getFeedRequest{Feed: "friends-of-friends"})
+	if err != nil || len(next.Items) != 0 {
+		t.Fatal("the next request failed to observe deletion", err)
+	}
+}
+
 func originalRankedPage(ctx context.Context, db sqlx.QueryerContext, viewer viewerContext, input getFeedRequest) (getFeedResponse, error) {
 	posts, err := selectPostsWithAuthor(ctx, db, `AND p.author_id<>$1 AND w.ended_at IS NULL
  AND ($2::timestamptz IS NULL OR (p.posted_at,p.id)<($2,$3))`+rankedFeedConditions+` ORDER BY p.posted_at DESC,p.id DESC`, viewer.ID, nil, "", mapKeys(viewer.Blocked), mapKeys(viewer.Friends), mapKeys(viewer.FriendsOfFriends))
