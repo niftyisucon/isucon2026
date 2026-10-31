@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,11 +49,16 @@ func createCommentHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
-		for _, id := range slices.Compact([]string{min(actor, post.AuthorID), max(actor, post.AuthorID)}) {
-			var lockedID string
-			if err := tx.GetContext(ctx, &lockedID, `SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE`, id); err != nil {
-				return err
-			}
+		var lockedIDs []string
+		if err := tx.SelectContext(ctx, &lockedIDs, `SELECT id FROM users WHERE id IN ($1,$2) ORDER BY id COLLATE "C" FOR NO KEY UPDATE`, actor, post.AuthorID); err != nil {
+			return err
+		}
+		expected := 2
+		if actor == post.AuthorID {
+			expected = 1
+		}
+		if len(lockedIDs) != expected {
+			return sql.ErrNoRows
 		}
 		allowed, err := canComment(ctx, tx, actor, post.ID)
 		if err != nil {
