@@ -3,16 +3,53 @@ package isureal
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 )
 
 type exportPostResponse struct {
 	createPostResponse
 	ImagePath string `json:"imagePath"`
+}
+
+type exportPost struct {
+	Post
+	ImageData  []byte  `db:"image_data"`
+	StorageKey *string `db:"storage_key"`
+}
+
+// The locator supplies the partition key. Only an image absent from the locator
+// uses the old all-partition lookup. Both branches see the same SQL snapshot.
+const exportImageJoin = `
+ LEFT JOIN image_locations loc ON loc.id=p.image_id
+ JOIN LATERAL (
+   SELECT i.* FROM image_objects i WHERE i.id=p.image_id AND i.created_at=loc.created_at
+   UNION ALL
+   SELECT i.* FROM image_objects i WHERE i.id=p.image_id AND loc.id IS NULL
+ ) i ON true`
+
+func selectExportPosts(ctx context.Context, db *sqlx.DB, userID string, storageColumn bool) ([]exportPost, error) {
+	columns := postColumns + `, i.data AS image_data`
+	if storageColumn {
+		columns += `, i.storage_key`
+	}
+	base := `SELECT ` + columns + ` FROM posts p JOIN posting_windows w ON w.id=p.posting_window_id`
+	conditions := ` WHERE p.author_id=$1 AND p.deleted_at IS NULL ORDER BY p.posted_at,p.id`
+	var posts []exportPost
+	err := sqlx.SelectContext(ctx, db, &posts, base+exportImageJoin+conditions, userID)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "42P01" {
+		// Old deployments may start before reset.sql creates image_locations.
+		err = sqlx.SelectContext(ctx, db, &posts, base+` JOIN image_objects i ON i.id=p.image_id`+conditions, userID)
+	}
+	return posts, err
 }
 
 func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
@@ -23,23 +60,8 @@ func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		var posts []struct {
-			Post
-			ImageData  []byte  `db:"image_data"`
-			StorageKey *string `db:"storage_key"`
-		}
-		extra := ""
-		if h.StorageColumn || h.Files != nil {
-			extra = ", i.storage_key"
-		}
-		if err := h.DB.SelectContext(ctx, &posts, `
-   SELECT `+postColumns+`, i.data AS image_data`+extra+`
-   FROM posts p
-   JOIN posting_windows w ON w.id = p.posting_window_id
-   JOIN image_objects i ON i.id = p.image_id
-   WHERE p.author_id = $1 AND p.deleted_at IS NULL
-   ORDER BY p.posted_at, p.id
-  `, userID); err != nil {
+		posts, err := selectExportPosts(ctx, h.DB, userID, h.StorageColumn || h.Files != nil)
+		if err != nil {
 			return err
 		}
 
