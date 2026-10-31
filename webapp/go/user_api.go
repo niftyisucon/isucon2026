@@ -89,6 +89,9 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
+		if err := lockPostingRegion(ctx, tx, input.Region, true); err != nil {
+			return err
+		}
 		userID := uuid.NewString()
 		var user User
 		err = tx.GetContext(ctx, &user, `INSERT INTO users (id, username, secret_key_hash, display_name, region, search_username, search_display_name) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (username) DO NOTHING RETURNING id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status`,
@@ -197,6 +200,11 @@ func updateMeHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
+		if input.Region != nil {
+			if err := lockAllPostingMemberships(ctx, tx); err != nil {
+				return err
+			}
+		}
 		if input.DisplayName != nil {
 			if _, err := tx.ExecContext(ctx, `UPDATE users SET display_name = $2, search_display_name = $3, updated_at = clock_timestamp() WHERE id = $1`, session.UserID, *input.DisplayName, normalizeSearchText(*input.DisplayName)); err != nil {
 				return err
