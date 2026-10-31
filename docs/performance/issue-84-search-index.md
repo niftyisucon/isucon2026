@@ -8,7 +8,7 @@ Job #23625 の保存PG集計では検索先頭行が686イベント、22.1秒。
 
 マージ・DBへの反映・デプロイ・ベンチはkomatsu-museが担当する。`search-index.sql` は通常のアプリ起動・initializeから自動実行しない。クエリは索引未導入でも同じ結果を返す。
 
-1. ベンチ外に、対象DB `isureal` の `pg_available_extensions` でpg_trgmが利用可能か確認する。既に導入済みなら `pg_extension` の配置スキーマがpublicであることを確認する。既存の配置が異なる場合はSQLの演算子クラスのスキーマを合わせる。競技サーバーでの可否は本PR作成時点で未確認。
+1. ベンチ外に、対象DB `isureal` の `pg_available_extensions` でpg_trgmが利用可能か確認する。既に導入済みなら `pg_extension` の配置スキーマがpublicであることを確認する。既存の配置が異なる場合はSQLの演算子クラスのスキーマを合わせる。2026-10-31 15:52 JSTにレビュアーがisu4を読み取り確認し、pg_trgm 1.6が利用可能・未導入、DB所有者isurealで作成可能と報告済み（[PRレビュー](https://github.com/niftyisucon/isucon2026/pull/85#issuecomment-6540297725)）。
 2. `#76` が反映済みで、usersのsearch_username/search_display_nameが存在することを確認する。
 3. ベンチ・デプロイ・初期化と重ならない作業枠で、DB管理権限を使いリポジトリルートから実行する。
 
@@ -19,7 +19,7 @@ Job #23625 の保存PG集計では検索先頭行が686イベント、22.1秒。
 通常のCREATE INDEXは書き込みを待たせるため、ベンチ中に実行しない。SQLは1トランザクションで、lock_timeout=5秒、statement_timeout=30秒、IF NOT EXISTS付き。失敗時はロールバックされる。競合処理の終了を確認してから再実行する。
 
 4. `pg_indexes` と `pg_index.indisvalid` でusers_search_trgm/users_search_legacyの定義と有効性、GINの `fastupdate=off` を確認し、通常のアプリデプロイを行う。
-5. ベンチでinitializeが60秒以内、検索/登録/表示名更新の正当性、検索単独の件数・avg/p95、SQL時間、DB CPU、スコアを比較する。再起動で索引は保持され、reset.sqlはテーブルを作り直さないため索引も保持する。
+5. ベンチでinitializeが60秒以内、検索/登録/表示名更新の正当性、検索単独の件数・avg/p95、登録とPATCH /api/meのp95、SQL時間、DB CPU、スコアを比較する。再起動で索引は保持され、reset.sqlはテーブルを作り直さないため索引も保持する。
 
 ロールバックはアプリを以前の版へ戻せば検索の意味も以前のまま。書き込み維持費まで戻す場合は、担当者がベンチ外に2索引だけを削除する。共有され得る拡張は削除しない。
 
