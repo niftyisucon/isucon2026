@@ -63,9 +63,20 @@ func signedImageURL(user User, imageID string) string {
 }
 
 func buildSignedImageURL(key []byte, imageID string, exp int64) string {
+	return formatSignedImageURL(imageID, exp, imageSignature(key, imageID, exp))
+}
+
+func formatSignedImageURL(imageID string, exp int64, signature []byte) string {
 	query := url.Values{
 		"exp": {strconv.FormatInt(exp, 10)},
-		"sig": {base64.RawURLEncoding.EncodeToString(imageSignature(key, imageID, exp))},
+		"sig": {base64.RawURLEncoding.EncodeToString(signature)},
 	}
 	return "/api/images/" + url.PathEscape(imageID) + "?" + query.Encode()
+}
+
+func verifyImageSignature(key []byte, imageID string, exp int64, signature []byte) bool {
+	if imageURLCacheEnabled && imageVerificationCacheEnabled {
+		return signedImageURLs.verify(key, imageID, exp, signature)
+	}
+	return hmac.Equal(signature, imageSignature(key, imageID, exp))
 }
