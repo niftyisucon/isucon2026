@@ -46,3 +46,21 @@ COMMIT;
 CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
 CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
 CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
+
+-- 画像 id から created_at を引く対応表（Issue #44）。image_objects は created_at で分割されているため、
+-- 画像取得で created_at を与えて実行時に1パーティションへ絞る。初期データ分は初回だけ作成する。
+CREATE TABLE IF NOT EXISTS image_locations (
+  id varchar(36) PRIMARY KEY,
+  created_at timestamptz NOT NULL
+);
+INSERT INTO image_locations (id, created_at)
+SELECT id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1)
+ON CONFLICT DO NOTHING;
+CREATE OR REPLACE FUNCTION image_locations_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO image_locations (id, created_at) VALUES (NEW.id, NEW.created_at) ON CONFLICT DO NOTHING;
+  RETURN NULL;
+END;
+$$;
+CREATE OR REPLACE TRIGGER image_locations_insert AFTER INSERT ON image_objects
+FOR EACH ROW EXECUTE FUNCTION image_locations_insert();
