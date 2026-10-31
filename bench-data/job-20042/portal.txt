@@ -1,0 +1,25 @@
+Job #20042
+Summary
+ID: 20042
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 14:57:25.174
+Started At: 2026-10-31 14:57:25.255
+Finished At: 2026-10-31 14:58:52.519
+Result: Finished / Passed
+Marked At: 2026-10-31 14:58:52.519
+Score: 25833
+Score Breakdown: base=25833, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout (excerpts; full text in portal detail)
+time=2026-10-31T05:57:42.940Z asia day1: 18 / europe day1: 7 / america day1: 6
+time=2026-10-31T05:58:18.902Z europe day5: 50 / america day5: 51
+time=2026-10-31T05:58:39.389Z grand prix: asia 17 / europe 48 / america 50
+{
+  "pass": true,
+  "score": 25833,
+  "messages": []
+}
+Verification: portal LIST and detail agree (#20042, 25833); server nginx traffic hump at 05:57–05:58 UTC matches the scenario. Same deployed state as Job #18936 (re-roll).
