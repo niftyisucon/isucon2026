@@ -22,8 +22,7 @@ Usage: isu <command> [args]
   setup [host...]            計測ツール導入とログ設定（冪等）
   splunk-setup [host...] [-f] Collector 導入・設定検証（トークン投入と起動は別）
   splunk-token <host> [-f]   人間がトークンを対話入力し Collector を起動
-  splunk-tracing <enable|disable> <host> [-f]
-                            Go バイナリ反映・トレース切り替え（Go のみ再起動）
+  splunk-tracing             廃止（操作せずエラー。設定変更はPR・通常のdeploy）
   pull [host...]             /etc の管理対象と webapp をリポジトリへ取り込む
   pgbadger-setup             ローカルに固定版pgBadgerを導入（Perl・curlが必要）
   pglog [db-host] [options]  PGログ取得・ローカル集計（HTML・TEXTを.local/へ保存）
