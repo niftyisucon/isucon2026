@@ -40,6 +40,14 @@ def summarize(rows):
     }
     attempts = result["url_cache_hits_delta"] + result["url_cache_misses_delta"]
     result["url_cache_hit_fraction"] = result["url_cache_hits_delta"] / attempts if attempts else None
+    if all("jpeg_validation_cache" in row for row in rows):
+        section = "jpeg_validation_cache"
+        for name in ("hits", "misses", "bypasses"):
+            result[f"jpeg_cache_{name}_delta"] = delta(section, name)
+        for name in ("entries", "bytes"):
+            result[f"jpeg_cache_peak_{name}"] = max(row[section][name] for row in rows)
+        attempts = result["jpeg_cache_hits_delta"] + result["jpeg_cache_misses_delta"] + result["jpeg_cache_bypasses_delta"]
+        result["jpeg_cache_hit_fraction"] = result["jpeg_cache_hits_delta"] / attempts if attempts else None
     return result
 
 

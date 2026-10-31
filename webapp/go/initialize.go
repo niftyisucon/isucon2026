@@ -35,6 +35,7 @@ func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 		// For multiple models, use comma-separated names; use brain when no AI model is used.
 		h.Images.Reset()
 		signedImageURLs.reset()
+		validatedJPEGs.reset()
 		return c.JSON(http.StatusOK, initializeResponse{Language: "go", Agent: "Codex", Harness: "Codex", Model: "gpt-6.1-sol"})
 	}
 }

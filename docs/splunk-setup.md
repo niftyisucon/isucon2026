@@ -268,7 +268,7 @@ cp config/splunk/tracing-disabled.conf hosts/isu3/etc/systemd/system/isureal-go.
 ワイルドカード・非ループバックIP・ホスト名は起動時に拒否します。
 公開API/nginxへのルート追加はありません。提供するのは次の2つだけです。
 
-- `GET /debug/stats`: PID・時刻・稼働秒数、共用 `sql.DB.Stats()`、GC/割当/実行系の runtime metrics、画像URL署名キャッシュの件数とhit/miss。
+- `GET /debug/stats`: PID・時刻・稼働秒数、共用 `sql.DB.Stats()`、GC/割当/実行系の runtime metrics、画像URL署名・JPEG検証キャッシュの件数とhit/miss。JPEG検証は保持バイト数・大きい入力のbypass件数も返します（[評価手順](performance/issue-88-jpeg-validation-cache.md)）。
 - `GET /debug/pprof/profile?seconds=30`: 1〜30秒のCPUプロファイル。cmdline・heap・goroutine dump・実行トレースは提供しません。
 
 環境変数、DSN、SQL本文、画像ID、利用者ID、HTTPヘッダー・本文は診断JSONへ含めません。

@@ -65,6 +65,7 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		}
 		if resp.Request.URL.Path == "/api/initialize" && resp.StatusCode == http.StatusOK {
 			cache.Reset()
+			validatedJPEGs.reset()
 		}
 		return nil
 	}
