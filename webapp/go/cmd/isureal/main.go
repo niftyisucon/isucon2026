@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"example.com/isureal-company/isureal"
@@ -26,7 +27,12 @@ func main() {
 		}
 	}
 	server := isureal.NewServer(config)
-	if err := server.Start(":8080"); err != nil {
+	// europe/america 用のアプリを asia 側に別ポートで立てるため、待ち受けポートを変えられるようにする。
+	port := os.Getenv("ISUREAL_PORT")
+	if port == "" {
+		port = "8080"
+	}
+	if err := server.Start(":" + port); err != nil {
 		panic("failed to start server: " + err.Error())
 	}
 }

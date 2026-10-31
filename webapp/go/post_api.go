@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -91,22 +92,25 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
-		var lockedUserID string
-		if err := tx.GetContext(ctx, &lockedUserID, `SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE`, userID); err != nil {
+		// ユーザー行のロックと取得を1往復で行う（europe/america から DB までは約100ms）。
+		var user User
+		if err := tx.GetContext(ctx, &user, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE id = $1 AND status = 'active' FOR NO KEY UPDATE`, userID); err != nil {
 			return err
 		}
-		user, err := getUser(ctx, tx, userID)
-		if err != nil {
+		if err := user.setImageKey(); err != nil {
 			return err
 		}
 		var window struct {
-			ID        string    `db:"id"`
-			LocalDate time.Time `db:"local_date"`
-			StartsAt  time.Time `db:"starts_at"`
+			ID             string    `db:"id"`
+			LocalDate      time.Time `db:"local_date"`
+			StartsAt       time.Time `db:"starts_at"`
+			OnTimeDeadline time.Time `db:"on_time_deadline"`
 		}
-		err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR UPDATE`, user.Region)
+		// 同じユーザーの二重投稿はユーザー行のロックで防げるため、投稿期間は FOR SHARE にして
+		// 同じリージョンの投稿どうしを並行させる。投稿期間を終える UPDATE は従来どおり待つ。
+		err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE`, user.Region)
 		if errors.Is(err, sql.ErrNoRows) {
-			err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR UPDATE`, user.Region)
+			err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE`, user.Region)
 		}
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -126,7 +130,8 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
   `, userID, window.LocalDate); err != nil {
 			return err
 		}
-		postedAt := time.Now().UTC()
+		// DB の timestamptz はマイクロ秒精度なので、応答を DB の値と一致させるため丸めておく。
+		postedAt := time.Now().UTC().Truncate(time.Microsecond)
 		if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
 			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
 		}
@@ -134,6 +139,9 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, imageData, postedAt); err != nil {
 			return err
 		}
+		// 投稿直後に同じリージョンの友達が取得することが多いので、書き込み時にキャッシュへ入れる。
+		// 閲覧可否は取得時に毎回 DB で確認するため、ロールバックされても返ることはない。
+		h.Images.Put(imageID, &cachedImage{OwnerID: userID, MediaType: "image/jpeg", Data: imageData})
 		postID := uuid.NewString()
 		if _, err := tx.ExecContext(ctx, `
    INSERT INTO posts (id, author_id, posting_window_id, image_id, caption, visibility,
@@ -143,12 +151,13 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			location.Kind, location.Latitude, location.Longitude, location.Locality, postedAt); err != nil {
 			return err
 		}
-		post, err := getPost(ctx, tx, postID)
-		if err != nil {
-			return err
-		}
 		if err := tx.Commit(); err != nil {
 			return err
+		}
+		post := Post{
+			ID: postID, AuthorID: userID, PostingWindowID: window.ID, ImageID: imageID,
+			Caption: input.Caption, Visibility: input.Visibility, PostLocation: location,
+			PostedAt: postedAt, OnTimeDeadline: window.OnTimeDeadline,
 		}
 		return c.JSON(http.StatusCreated, newPostResponse(post, user))
 	}
