@@ -32,7 +32,7 @@ func GetSession(c *echo.Context) *Session {
 	return sess
 }
 
-func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
+func getSessionFromHeader(c *echo.Context, h *HandlerContext) (*Session, error) {
 	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
 	if authHeader == "" {
 		return nil, nil
@@ -46,12 +46,16 @@ func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
 
 	tokenHashBytes := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(tokenHashBytes[:])
+	if cached := h.Sessions.get(tokenHash); cached != nil {
+		return cached, nil
+	}
+	started := h.Sessions.start()
 	// Includes database/sql connection acquisition, which the pgx SQL span
 	// starts too late to observe. The difference also includes scheduling/scan.
 	ctx, span := startApplicationPhase(c.Request().Context(), "session.lookup")
 	defer span.End()
 	var session Session
-	err := db.GetContext(ctx, &session, `
+	err := h.DB.GetContext(ctx, &session, `
 		SELECT s.user_id, s.token_hash, s.created_at, u.region
 		FROM login_sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = $1
@@ -63,13 +67,14 @@ func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
+	h.Sessions.put(session, started)
 	return &session, nil
 }
 
 func SessionMiddleware(handlerContext *HandlerContext, authRequired bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			session, err := getSessionFromHeader(c, handlerContext.DB)
+			session, err := getSessionFromHeader(c, handlerContext)
 			if err != nil {
 				return err
 			}

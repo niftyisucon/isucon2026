@@ -141,7 +141,9 @@ func loginHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		if err := tx.Commit(); err != nil {
+		err = tx.Commit()
+		h.Sessions.invalidateUser(user.ID)
+		if err != nil {
 			return err
 		}
 		return c.JSON(http.StatusOK, loginResponse{Token: session.Token, User: newSessionUserResponse(user)})
@@ -154,7 +156,9 @@ func logoutHandler(h *HandlerContext) echo.HandlerFunc {
 		if session == nil {
 			return NewAPIError(http.StatusUnauthorized, "invalid_session")
 		}
-		if err := InvalidateLoginSession(h.DB, session.UserID, session.TokenHash); err != nil {
+		err := InvalidateLoginSession(h.DB, session.UserID, session.TokenHash)
+		h.Sessions.invalidateUser(session.UserID)
+		if err != nil {
 			return err
 		}
 		return c.NoContent(http.StatusNoContent)
@@ -227,7 +231,11 @@ func updateMeHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		if err := tx.Commit(); err != nil {
+		err = tx.Commit()
+		if input.Region != nil {
+			h.Sessions.invalidateUser(session.UserID)
+		}
+		if err != nil {
 			return err
 		}
 		return c.JSON(http.StatusOK, updateMeResponse(newGetMeResponse(user)))

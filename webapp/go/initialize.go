@@ -21,7 +21,9 @@ func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 		cmd := exec.Command("../sql/init.sh")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		err := cmd.Run()
+		h.Sessions.reset()
+		if err != nil {
 			return err
 		}
 		if err := prepareUserSearch(c.Request().Context(), h.DB); err != nil {
