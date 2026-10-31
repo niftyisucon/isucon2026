@@ -47,6 +47,8 @@ CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
 CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
 CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
 CREATE INDEX IF NOT EXISTS follows_followee_id ON follows(followee_id);
+CREATE INDEX IF NOT EXISTS friend_requests_pending_requester_recipient ON friend_requests(requester_id, recipient_id) WHERE status='pending';
+CREATE INDEX IF NOT EXISTS friend_requests_pending_recipient ON friend_requests(recipient_id) WHERE status='pending';
 
 -- 画像 id から created_at を引く対応表（Issue #44）。image_objects は created_at で分割されているため、
 -- 画像取得で created_at を与えて実行時に1パーティションへ絞る。初期データ分は初回だけ作成する。
@@ -68,3 +70,7 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER image_locations_insert AFTER INSERT ON image_objects
 FOR EACH ROW EXECUTE FUNCTION image_locations_insert();
+
+-- 認証とログイン時の無効化は有効なセッションだけを検索する。
+CREATE INDEX IF NOT EXISTS login_sessions_active_token_hash ON login_sessions(token_hash) WHERE active = true;
+CREATE INDEX IF NOT EXISTS login_sessions_active_user_id ON login_sessions(user_id) WHERE active = true;

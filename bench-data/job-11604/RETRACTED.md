@@ -1,0 +1,3 @@
+# RETRACTED — Job #11604 does not exist
+This package was built from a corrupted browser-task handoff (the task was interrupted by a service restart). The ISUCON portal returns 404 for benchmark job 11604; no such run ever happened. The score (11014), timestamps, and stdout quoted in the original files were not real, and the LTSV/PG data in this directory mixed other windows. Do not use any of it. The real post-PR-#45 bench is Job #11956 (11597 Passed) — see bench-data/job-11956/.
+Also retracted: the claim that the portal clock runs ~4 minutes ahead of the servers. Portal times are JST and consistent with server logs.
