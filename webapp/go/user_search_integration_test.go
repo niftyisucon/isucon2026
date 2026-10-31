@@ -123,58 +123,82 @@ func TestSearchUsersLocal(t *testing.T) {
 		}
 		return result
 	}
-	for _, q := range []string{"STRASSE", "ς", "café", "CAFE\u0301", "%", "_", "\\", "🙂", "i", "ffi", "needle", "BULK", "no match"} {
-		t.Run(q, func(t *testing.T) {
-			beforeUsername, beforeID := "", ""
-			for page := 0; page < 4; page++ {
-				params := url.Values{"q": {q}, "beforeUsername": {beforeUsername}, "beforeId": {beforeID}}
-				rec := httptest.NewRecorder()
-				e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+params.Encode(), nil))
-				if rec.Code != 200 {
-					t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-				}
-				var got searchUsersResponse
-				if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-					t.Fatal(err)
-				}
-				want := reference(q, beforeUsername, beforeID)
-				if !reflect.DeepEqual(got, want) {
-					t.Fatalf("page %d mismatch\ngot: %+v\nwant: %+v", page, got, want)
-				}
-				if !got.HasMore {
-					break
-				}
-				last := got.Items[len(got.Items)-1]
-				beforeUsername, beforeID = last.Username, last.ID
+	for _, phase := range []string{"legacy", "prepared", "mixed"} {
+		if phase == "prepared" {
+			if err := prepareUserSearch(t.Context(), db); err != nil {
+				t.Fatal(err)
 			}
-		})
-	}
-	for _, cursor := range []struct {
-		username, id string
-		count        int
-		more         bool
-	}{
-		{"bulk-079", "bulk-078", 50, true},
-		{"bulk-079", "bulk-079", 50, false},
-		{"bulk-080", "bulk-080", 49, false},
-	} {
-		params := url.Values{"q": {"needle"}, "beforeUsername": {cursor.username}, "beforeId": {cursor.id}}
-		rec := httptest.NewRecorder()
-		e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+params.Encode(), nil))
-		var got searchUsersResponse
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatal(err)
+			var candidates []searchCandidate
+			if err := db.Select(&candidates, searchCandidatesSQL, "viewer", "", "", "needle"); err != nil {
+				t.Fatal(err)
+			}
+			if len(candidates) != 51 {
+				t.Fatalf("prepared candidates=%d, want 51", len(candidates))
+			}
 		}
-		if rec.Code != 200 || len(got.Items) != cursor.count || got.HasMore != cursor.more || !reflect.DeepEqual(got, reference("needle", cursor.username, cursor.id)) {
-			t.Fatalf("boundary cursor %+v: status=%d items=%d more=%v", cursor, rec.Code, len(got.Items), got.HasMore)
+		if phase == "mixed" {
+			// More than 51 unprepared nonmatches must not hide prepared matches.
+			if _, err := db.Exec(`INSERT INTO users(id,username,secret_key_hash,display_name,region)
+ SELECT 'legacy-'||n, 'aaaa-'||n, repeat('ab',32), 'unrelated', 'asia' FROM generate_series(1,60) n`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := db.Exec(`UPDATE users SET display_name='legacy nonmatch' WHERE username LIKE 'bulk-%' AND username<'bulk-065'`); err != nil {
+				t.Fatal(err)
+			}
 		}
-	}
+		for _, q := range []string{"STRASSE", "ς", "café", "CAFE\u0301", "%", "_", "\\", "🙂", "i", "ffi", "needle", "BULK", "no match"} {
+			t.Run(phase+"/"+q, func(t *testing.T) {
+				beforeUsername, beforeID := "", ""
+				for page := 0; page < 4; page++ {
+					params := url.Values{"q": {q}, "beforeUsername": {beforeUsername}, "beforeId": {beforeID}}
+					rec := httptest.NewRecorder()
+					e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+params.Encode(), nil))
+					if rec.Code != 200 {
+						t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+					}
+					var got searchUsersResponse
+					if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+						t.Fatal(err)
+					}
+					want := reference(q, beforeUsername, beforeID)
+					if !reflect.DeepEqual(got, want) {
+						t.Fatalf("page %d mismatch\ngot: %+v\nwant: %+v", page, got, want)
+					}
+					if !got.HasMore {
+						break
+					}
+					last := got.Items[len(got.Items)-1]
+					beforeUsername, beforeID = last.Username, last.ID
+				}
+			})
+		}
+		for _, cursor := range []struct {
+			username, id string
+			count        int
+			more         bool
+		}{
+			{"bulk-079", "bulk-078", 50, true},
+			{"bulk-079", "bulk-079", 50, false},
+			{"bulk-080", "bulk-080", 49, false},
+		} {
+			params := url.Values{"q": {"needle"}, "beforeUsername": {cursor.username}, "beforeId": {cursor.id}}
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+params.Encode(), nil))
+			var got searchUsersResponse
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatal(err)
+			}
+			if rec.Code != 200 || len(got.Items) != cursor.count || got.HasMore != cursor.more || !reflect.DeepEqual(got, reference("needle", cursor.username, cursor.id)) {
+				t.Fatalf("boundary cursor %+v: status=%d items=%d more=%v", cursor, rec.Code, len(got.Items), got.HasMore)
+			}
+		}
 
-	for _, query := range []string{"", "q=x&beforeId=id", "q=x&beforeUsername=name"} {
-		rec := httptest.NewRecorder()
-		e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+query, nil))
-		if rec.Code != 400 {
-			t.Fatalf("invalid query %q status %d", query, rec.Code)
+		for _, query := range []string{"", "q=x&beforeId=id", "q=x&beforeUsername=name"} {
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/users?"+query, nil))
+			if rec.Code != 400 {
+				t.Fatalf("invalid query %q status %d", query, rec.Code)
+			}
 		}
 	}
 }

@@ -2,6 +2,9 @@ SET session_replication_role = replica;
 
 BEGIN;
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS search_username text,
+                  ADD COLUMN IF NOT EXISTS search_display_name text;
+
 TRUNCATE ip_bans, login_sessions, administrator_sessions, friendships, friend_requests, follows, block_relations;
 
 DELETE FROM notifications WHERE created_at > (SELECT created_at FROM initial_data_boundary);
@@ -25,6 +28,7 @@ DELETE FROM users WHERE created_at > (SELECT created_at FROM initial_data_bounda
 
 UPDATE users u
 SET display_name = i.display_name, bio = i.bio, profile_image_id = i.profile_image_id, region = i.region,
+    search_username = NULL, search_display_name = NULL,
     account_type = i.account_type, status = i.status, deleted_at = i.deleted_at, updated_at = i.updated_at
 FROM initial_users i
 WHERE u.id = i.id
