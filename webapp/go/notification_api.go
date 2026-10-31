@@ -30,6 +30,9 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 		} else if err := h.DB.GetContext(ctx, &connectedAt, `SELECT clock_timestamp()`); err != nil {
 			return err
 		}
+		// Authentication and the DB clock query are bounded, but an SSE may
+		// wait minutes. Return its slot before flushing or waiting for delivery.
+		releaseCoreAdmission(ctx)
 		response := c.Response()
 		response.Header().Set("Content-Type", "text/event-stream")
 		response.WriteHeader(http.StatusOK)

@@ -88,7 +88,11 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
+		// pgx's BEGIN span starts after database/sql acquired a connection.
+		// Keep a separate sibling phase around the complete acquisition call.
+		_, beginSpan := startApplicationPhase(ctx, "post.begin")
 		tx, err := h.DB.BeginTxx(ctx, nil)
+		beginSpan.End()
 		if err != nil {
 			return err
 		}
