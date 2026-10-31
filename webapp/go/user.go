@@ -21,6 +21,8 @@ type User struct {
 	AccountType    string  `db:"account_type" json:"accountType"`
 	Status         string  `db:"status" json:"status"`
 	ImageKey       []byte  `db:"-" json:"-"`
+	// Internal render context: the core chooses the expiry before offloading.
+	ImageURLExpiry int64 `db:"-" json:"-"`
 }
 
 var usernamePattern = regexp.MustCompile(`^[a-z0-9_.-]{1,64}$`)
