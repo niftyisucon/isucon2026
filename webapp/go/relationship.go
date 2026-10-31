@@ -59,6 +59,22 @@ func insertFriendship(ctx context.Context, tx *sqlx.Tx, request FriendRequest) e
 	return err
 }
 
+// The caller holds both users' row locks and has checked pending/block state
+// in a statement after acquiring those locks. Both writes remain in that tx.
+func acceptFriendRequestLocked(ctx context.Context, tx *sqlx.Tx, requestID, firstUser, secondUser string) (FriendRequest, error) {
+	var request FriendRequest
+	err := tx.GetContext(ctx, &request, `
+ WITH accepted AS (
+   UPDATE friend_requests SET status='accepted',updated_at=clock_timestamp() WHERE id=$1
+   RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+ ), inserted AS (
+   INSERT INTO friendships(id,user_low_id,user_high_id,source_request_id)
+   SELECT $2,$3,$4,id FROM accepted RETURNING id
+ ) SELECT accepted.* FROM accepted CROSS JOIN inserted`,
+		requestID, uuid.NewString(), min(firstUser, secondUser), max(firstUser, secondUser))
+	return request, err
+}
+
 func requireRelationshipChange(result sql.Result, err error, status int, code string) error {
 	if err != nil {
 		return err
