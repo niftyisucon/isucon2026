@@ -13,6 +13,22 @@
 - ルールや制約に更新・追加があった場合は、その内容を以後の調査・実装・サーバー操作に反映してください。不明な点は推測で回避せず確認してください。
 - テンプレート由来の設定は本戦の構成を保証しません。実サーバーを調査し、`isu.conf` の `ChangeMe`、サービス名、パス、採用言語を実環境に合わせて変更してください。
 
+## Claude Code / Codex の共有設定
+
+- 共通の作業指示はこの `AGENTS.md` を編集します。`CLAUDE.md` は `AGENTS.md` への相対シンボリックリンクで、同じ内容を参照します。
+- Codex の標準パスに合わせ、共有スキルの実体は `.agents/skills/<skill-name>/SKILL.md` に置きます（`.agent/` ではなく `.agents/`）。
+- Claude Code 用の `.claude/skills` は `../.agents/skills` への相対シンボリックリンクです。スキルを追加・編集すると両方から参照できます。現在は置き場のみで、スキルは未追加です。
+- `.claude/` と `.agents/` 全体はリンクせず、ツール固有の設定はそれぞれの仕様に従って管理します。Claude 専用の設定や機能は、共有スキルでも Codex に適用されるとは限りません。
+
+```text
+AGENTS.md                    # 共通指示の実体
+CLAUDE.md -> AGENTS.md
+.agents/
+└── skills/                  # 共有スキルの実体
+.claude/
+└── skills -> ../.agents/skills
+```
+
 ## CLI の準備
 
 サーバー操作にはリポジトリルートから `./bin/isu` を使います。
@@ -50,6 +66,70 @@ cp examples/isu.local.conf .local/isu.local.conf
 
 `[host...]` は省略すると全ホスト、指定するとそのホストだけを対象にします（例: `./bin/isu deploy isu2 isu3`）。
 ベンチ実行・分析・スコア管理・Docker による手元検証のコマンドは、この CLI には含めていません。
+
+## 取り込み後のディレクトリ構成と役割
+
+個人設定を準備し、`discover` → `pull` を実行した後の構成例です。
+`contest-go.service` と `webapp/` 内の名前は例であり、実際の構成は `isu.conf` とサーバー上のファイルによって決まります。
+
+```text
+isucon16/
+├── AGENTS.md
+├── CLAUDE.md -> AGENTS.md
+├── .agents/
+│   └── skills/
+├── .claude/
+│   └── skills -> ../.agents/skills
+├── README.md
+├── isu.conf
+├── .gitignore
+├── .local/
+│   ├── ssh_config
+│   └── isu.local.conf
+├── bin/
+│   └── isu
+├── lib/isu/
+│   ├── common.sh
+│   ├── cmd/
+│   └── remote/
+├── examples/
+│   ├── ssh_config
+│   └── isu.local.conf
+├── hosts/
+│   ├── isu1/
+│   │   ├── discovery.md
+│   │   ├── etc/
+│   │   │   ├── nginx/
+│   │   │   ├── mysql/
+│   │   │   └── systemd/system/contest-go.service
+│   │   └── home/isucon/env.sh
+│   ├── isu2/                    # isu1 と同様にホスト別の設定を配置
+│   └── isu3/
+└── webapp/                      # 共通のアプリ一式
+    ├── go/
+    ├── sql/
+    └── public/
+```
+
+| パス | 役割 |
+|---|---|
+| `.agents/skills/` | Claude Code / Codex で共有するスキルの実体 |
+| `.claude/` | Claude Code 用の領域。`skills` は `.agents/skills/` を参照するリンク |
+| `.local/` | 手動で準備する個人用の接続情報・操作者設定。Git 管理外で、`pull` は作成しない |
+| `bin/` | CLI の実行入口 `isu` を置く |
+| `lib/isu/` | CLI の共通処理を置く。`cmd/` はローカルで動く各サブコマンド、`remote/` は SSH 経由でサーバー上で実行するスクリプト |
+| `examples/` | `.local/` にコピーして使う個人設定のひな形 |
+| `hosts/` | ホストごとの調査結果と管理対象のサーバー設定を置く |
+| `hosts/<host>/etc/` | そのホストから取り込んだ nginx・DB・systemd などの設定。サーバーの `/etc/` 以下のパス構造を保持する |
+| `hosts/<host>/home/` | 管理対象に指定したホーム配下のファイル。例: `/home/isucon/env.sh` |
+| `webapp/` | 全 app ホストへの反映に使う共通のアプリ。`go/` は実装、`sql/` は SQL、`public/` は静的ファイルの配置例であり、CLI が固定で作るものではない |
+
+- `discovery.md` は `discover` が作成します。`pull` だけでは生成されません。
+- `pull` は `ISU_HOST_FILES` に指定された、サーバーに存在するファイル・ディレクトリを取り込みます。存在しなければ警告してスキップします。現在の `ChangeMe.service` は実際のサービス名へ変更してください。
+- 設定はホスト別です。例えば `isu2:/etc/nginx/nginx.conf` は `hosts/isu2/etc/nginx/nginx.conf` に入ります。
+- アプリは、指定された対象ホストのうち最初に `app` の役割を持つホストから一度だけ取得します。現在の設定で引数なしなら `isu1`、`pull isu2` なら `isu2` です。アプリの取得対象は `ISU_WEBAPP_REMOTE` で指定します。
+- アプリの中身は直接 `webapp/` に入り、`webapp/webapp/` にはなりません。`ISU_SYNC_EXCLUDES`・`ISU_WEBAPP_EXCLUDES`・`ISU_WEBAPP_PULL_EXCLUDES` による除外も適用されます。
+- `deploy isu2` は `hosts/isu2/` 内の管理対象設定を反映し、`isu2` が `app` の役割を持つ場合は共通の `webapp/` も反映します。
 
 ## 初動の流れと操作上の注意
 
