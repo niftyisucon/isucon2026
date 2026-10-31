@@ -57,14 +57,15 @@ func diagnosticsHandler(db *sql.DB) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		_ = json.NewEncoder(w).Encode(struct {
-			Time          time.Time         `json:"time"`
-			PID           int               `json:"pid"`
-			UptimeSeconds float64           `json:"uptime_seconds"`
-			DB            sql.DBStats       `json:"db"`
-			Runtime       map[string]any    `json:"runtime"`
-			ImageURLs     map[string]uint64 `json:"image_url_cache"`
-			Sessions      map[string]uint64 `json:"session_cache"`
-		}{time.Now().UTC(), os.Getpid(), time.Since(processStarted).Seconds(), db.Stats(), values, signedImageURLs.stats(), sessionCacheStats()})
+			Time           time.Time         `json:"time"`
+			PID            int               `json:"pid"`
+			UptimeSeconds  float64           `json:"uptime_seconds"`
+			DB             sql.DBStats       `json:"db"`
+			Runtime        map[string]any    `json:"runtime"`
+			ImageURLs      map[string]uint64 `json:"image_url_cache"`
+			Sessions       map[string]uint64 `json:"session_cache"`
+			JPEGValidation map[string]uint64 `json:"jpeg_validation_cache"`
+		}{time.Now().UTC(), os.Getpid(), time.Since(processStarted).Seconds(), db.Stats(), values, signedImageURLs.stats(), sessionCacheStats(), validatedJPEGs.stats()})
 	})
 	mux.HandleFunc("GET /debug/pprof/profile", func(w http.ResponseWriter, r *http.Request) {
 		seconds := 30

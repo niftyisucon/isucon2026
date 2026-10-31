@@ -40,6 +40,13 @@ func imageValidationValue(data []byte, limit int) string {
 var errImageDimensions = errors.New("image dimensions exceed limit")
 
 func decodeJPEG(data []byte, limit int) error {
+	if jpegValidationCacheEnabled {
+		return validatedJPEGs.validate(data, limit)
+	}
+	return decodeJPEGUncached(data, limit)
+}
+
+func decodeJPEGUncached(data []byte, limit int) error {
 	img, err := jpeg.Decode(bytes.NewReader(data))
 	if err != nil {
 		return err
