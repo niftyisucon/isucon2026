@@ -62,6 +62,7 @@
   <p class="scroll-note">論理構成図です。サーバー間も既存ルーターを経由し、通信遅延・帯域制限は維持します。狭い画面では図を横にスクロールできます。</p>
  </div>
  <div class="grid"><div class="note"><h3>「管理情報」と「画像本体」を分ける</h3><p>DBには画像ID・所有者・種別・作成時刻・保存キーを残します。新しく追加した画像のバイト列だけを、asia1の永続ディスクへ移します。</p></div><div class="note edge"><h3>海外で完結するのは一部の仕事</h3><p>JPEGのデコードと画像の再配信を海外へ分担します。投稿の許可や画像の有効性は、引き続きasiaの現在のDB状態で判断します。</p></div></div>
+ <div class="callout"><strong>SSEはDB直結を残す例外です。</strong> 海外のGoが接続を保持し、IP制限・セッション・リージョン確認、時刻・世代取得、バッチSQLとLISTENをisu4へ直接行います。この通信にもルーターの遅延・帯域制限がかかります。</div>
  <h3>現行構成から何が変わるか</h3>
  <div class="table-scroll"><table class="comparison"><thead><tr><th>対象</th><th>切り替え前</th><th>このPRを適用した後</th></tr></thead><tbody>
  <tr><td>asiaのアプリ</td><td>リージョンごとに3プロセス</td><td>1プロセス・3ポートでDB接続とキャッシュを共有</td></tr>
@@ -84,9 +85,10 @@
  <div id="read-sequence" class="sequence-layout"></div>
  <div class="grid"><div class="note edge"><h3>ヒットすると、本体の再転送を省略</h3><p>画像IDでキャッシュするため、同じ画像に別の署名付きURLが発行されても本体を再利用できます。画像を丸ごとリージョン間で運ぶ代わりに、軽い確認結果を返します。</p></div><div class="note warn"><h3>確認の1往復は残る</h3><p>署名・期限・削除・置換・退会などの現行判定は毎回通します。無効ならキャッシュが残っていても403です。権限を判定するSQLや、投稿・友達・FoF・ブロックのAPI処理を省略する変更はありません。</p></div></div>
  <p class="small">キャッシュヒット時の204はasiaと海外Goの間だけの内部応答です。海外Goが本体を添えて、利用者には通常の200を返します。初期画像は従来のDB blobから取得します。新規画像の正本ファイルが失われた場合、空の画像を200で返すことはしません。</p>
+ <div class="note"><h3>asiaのキャッシュにも役割がある</h3><p>asiaの利用者や海外でのキャッシュミスに対して、本体の再読込と画像テーブルの探索を省きます。所有者IDから現在の秘密鍵・有効性をDBで確認するため、閲覧許可をキャッシュするものではありません。期限はasiaで画像SQLの前と応答直前に確認します。</p></div>
 </section>
 <section id="notify" class="panel" role="tabpanel" aria-labelledby="tab-notify" hidden>
- <div class="intro"><h2>③ 通知を受け取る</h2><p class="small">SSEは通知を待つ接続です。mainのバッチ確認を引き継ぎ、同じGoプロセスのworkerが購読者をまとめて確認します。このPRではDBの変更通知による起動も加えます。</p></div>
+ <div class="intro"><h2>③ 通知を受け取る</h2><p class="small">SSEは通知を待つ接続です。海外GoからDBへ直接接続し、各プロセスのworkerが購読者をまとめて確認します。通常APIをasiaへ集約する方針の例外で、長時間接続と配信を海外で受け持つためです。mainのバッチ確認にDBの変更通知による起動を加えます。</p></div>
  <div id="notify-sequence" class="sequence-layout"></div>
  <div class="grid"><div class="note"><h3>NOTIFYは「見に行って」という合図</h3><p>DBから届く変更通知をそのまま利用者へ送ることはありません。workerが通知テーブルを再確認し、本人の通知IDと内容、現在のユーザー状態を確かめて配信します。</p></div><div class="note warn"><h3>取りこぼし対策も残す</h3><p>通常時も5秒ごとのバッチ確認を残します。LISTEN接続が切れた場合やトリガー未導入で起動した場合は500msのバッチ確認を使います。ロールバックされた通知は配信しません。</p></div></div>
  <p class="small">初回購読時にもバッチ確認を起こします。1SQLにまとめても、購読者それぞれの検索処理はDB内部に残ります。退会・リージョン変更・初期化世代の不一致は再確認して接続を終了します。PR #56はmainへマージ済みです。同じバッチ実装を維持し、追加のworkerを二重に作らない形で統合しています。</p>
