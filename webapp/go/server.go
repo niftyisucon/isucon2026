@@ -1,12 +1,23 @@
 package isureal
 
 import (
+	"database/sql"
 	"os"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
+
+// Five application processes can share a PostgreSQL server with 100 slots.
+// Keep 20 slots for monitoring, initialization, administration and reserves.
+const maxDBConnections = 16
+const maxIdleDBConnections = 10
+
+func configureDatabasePool(db *sql.DB) {
+	db.SetMaxOpenConns(maxDBConnections)
+	db.SetMaxIdleConns(maxIdleDBConnections)
+}
 
 type HandlerContext struct {
 	DB     *sqlx.DB
@@ -32,7 +43,7 @@ func NewServer(config *Config) *echo.Echo {
 	if err != nil {
 		panic("failed to open database: " + err.Error())
 	}
-	db.SetMaxOpenConns(30)
+	configureDatabasePool(db.DB)
 	err = db.Ping()
 	if err != nil {
 		panic("failed to ping database: " + err.Error())
