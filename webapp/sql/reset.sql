@@ -46,3 +46,6 @@ COMMIT;
 CREATE INDEX IF NOT EXISTS realmojis_image_id ON realmojis(image_id);
 CREATE INDEX IF NOT EXISTS posts_image_id ON posts(image_id);
 CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id);
+-- 認証とログイン時の無効化は有効なセッションだけを検索する。
+CREATE INDEX IF NOT EXISTS login_sessions_active_token_hash ON login_sessions(token_hash) WHERE active = true;
+CREATE INDEX IF NOT EXISTS login_sessions_active_user_id ON login_sessions(user_id) WHERE active = true;
