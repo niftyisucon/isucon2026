@@ -139,6 +139,10 @@ func TestRankedLateDetailsMatchOriginal(t *testing.T) {
 	if err := tx.Rollback(); err != nil {
 		t.Fatal(err)
 	}
+	// Reuse the same pooled connection so the final SHOW also verifies that
+	// custom planning is reset when the ranked-feed transaction ends.
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
 	actual, err := getRankedFeed(t.Context(), db, "u0", getFeedRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -165,6 +169,24 @@ func TestRankedLateDetailsMatchOriginal(t *testing.T) {
 			}
 		}
 		t.Logf("optimized=%v first-page mean=%s (both include viewer lookup; new also includes transaction)", optimized, time.Since(start)/5)
+	}
+	// Exercise the small-candidate path as well as the 397-candidate aggregate
+	// path above, using the independent pre-change page/score implementation.
+	mustSQL(t, db, `UPDATE posts SET deleted_at=now() WHERE id>'p0060'`)
+	small, err := getRankedFeed(t.Context(), db, "u0", getFeedRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantSmall, err := originalRankedPage(t.Context(), db, viewer, getFeedRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(stripExpiry(small), stripExpiry(wantSmall)) || len(small.Items) >= scoreAggregateThreshold {
+		t.Fatal("small-candidate page differs")
+	}
+	var mode string
+	if err := db.Get(&mode, `SHOW plan_cache_mode`); err != nil || mode != "auto" {
+		t.Fatalf("transaction setting leaked: %q %v", mode, err)
 	}
 	mustSQL(t, db, `UPDATE posts SET deleted_at=now() WHERE author_id='u0'`)
 	empty, err := getRankedFeed(t.Context(), db, "u0", getFeedRequest{})
