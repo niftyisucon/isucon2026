@@ -124,13 +124,18 @@ func CreateLoginSession(db *sqlx.DB, userID string) (*Session, error) {
 }
 
 func createLoginSessionTx(ctx context.Context, tx *sqlx.Tx, userID string) (*Session, error) {
-	randomToken := uuid.NewString()
-	tokenHashBytes := sha256.Sum256([]byte(randomToken))
-	tokenHash := hex.EncodeToString(tokenHashBytes[:])
 	var lockedUserID string
 	if err := tx.GetContext(ctx, &lockedUserID, `SELECT id FROM users WHERE id = $1 AND status = 'active' FOR NO KEY UPDATE`, userID); err != nil {
 		return nil, fmt.Errorf("failed to lock user: %w", err)
 	}
+	return createLoginSessionLocked(ctx, tx, userID)
+}
+
+// The caller must hold the user's row lock until the transaction commits.
+func createLoginSessionLocked(ctx context.Context, tx *sqlx.Tx, userID string) (*Session, error) {
+	randomToken := uuid.NewString()
+	tokenHashBytes := sha256.Sum256([]byte(randomToken))
+	tokenHash := hex.EncodeToString(tokenHashBytes[:])
 	if _, err := tx.ExecContext(ctx, `
   UPDATE login_sessions
   SET active = false, invalidated_at = clock_timestamp(), reason = 'replaced'
@@ -139,18 +144,16 @@ func createLoginSessionTx(ctx context.Context, tx *sqlx.Tx, userID string) (*Ses
 		return nil, fmt.Errorf("failed to invalidate sessions: %w", err)
 	}
 	sessionID := uuid.NewString()
-	if _, err := tx.ExecContext(ctx, `
+	var session Session
+	if err := tx.GetContext(ctx, &session, `
   INSERT INTO login_sessions (id, user_id, token_hash)
   VALUES ($1, $2, $3)
+  RETURNING user_id, token_hash, created_at
  `, sessionID, userID, tokenHash); err != nil {
 		return nil, fmt.Errorf("failed to insert session: %w", err)
 	}
-	session, err := getLoginSession(ctx, tx, sessionID)
-	if err != nil {
-		return nil, err
-	}
 	session.Token = randomToken
-	return session, nil
+	return &session, nil
 }
 
 func getLoginSession(ctx context.Context, db sqlx.QueryerContext, sessionID string) (*Session, error) {
