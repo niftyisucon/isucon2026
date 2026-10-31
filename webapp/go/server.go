@@ -1,12 +1,22 @@
 package isureal
 
 import (
+	"database/sql"
 	"os"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
+
+// Keep the existing concurrency limit and reuse more idle connections.
+const maxDBConnections = 30
+const maxIdleDBConnections = 10
+
+func configureDatabasePool(db *sql.DB) {
+	db.SetMaxOpenConns(maxDBConnections)
+	db.SetMaxIdleConns(maxIdleDBConnections)
+}
 
 type HandlerContext struct {
 	DB     *sqlx.DB
@@ -33,7 +43,7 @@ func NewServer(config *Config) *echo.Echo {
 	if err != nil {
 		panic("failed to open database: " + err.Error())
 	}
-	db.SetMaxOpenConns(30)
+	configureDatabasePool(db.DB)
 	err = db.Ping()
 	if err != nil {
 		panic("failed to ping database: " + err.Error())
