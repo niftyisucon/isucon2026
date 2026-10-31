@@ -75,7 +75,7 @@ cp examples/isu.local.conf .local/isu.local.conf
 `discover` は4台の調査結果を `hosts/<host>/discovery.md` に保存します。環境変数の認証情報は伏せ、実効 systemd 設定・ルート・nginx の全設定・PostgreSQL の稼働状態、DBサイズ、設定、テーブル／インデックス統計も収集します。DB の実スキーマは `hosts/isu4/postgresql-schema.sql` に保存します（調査用で、deploy の反映対象外）。
 `pull` は4台の nginx・PostgreSQL・アプリと guard の systemd ユニット・`/home/isucon/env.sh` を `hosts/<host>/` へ、最初の app ホストの Go 実装・SQL・静的ファイルを `webapp/` へ取り込みます。ビルド済みバイナリと他言語実装は取り込み対象外です。
 `build` は Linux amd64 向けに `webapp/go/isureal` を生成します。
-`setup` は役割別に処理します。nginx ホストでは ALP と LTSV ログ、DB ホストでは `postgresql@16-main` の `conf.d/99-isu-log.conf` に `log_min_duration_statement = 0` を設定して reload します。今回の調査ではサーバー上の `setup` は実行していません。
+`setup` は役割別に処理します。nginx ホストでは ALP と LTSV ログ、DB ホストでは `postgresql@16-main` の `conf.d/99-isu-log.conf` に `log_min_duration_statement = 0` を設定して reload します。
 
 | コマンド | 用途 |
 |---|---|

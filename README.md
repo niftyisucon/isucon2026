@@ -52,4 +52,12 @@ owner は担当確定まで `unassigned` なので、反映操作の前に担当
 ## 計測・分析ツール
 
 分析ツールの共有設定は `config/` に置きます。ALP の設定は `config/alp.yml` です。
+アプリ3台のログは `/var/log/nginx/access_ltsv.log`、DBのクエリ時間ログは `/var/log/postgresql/postgresql-16-main.log` に出力します。
+リポジトリルートから、設定を標準入力で渡してサーバー上のALPで集計できます（`isu2`、`isu3` も同様）。
+
+```bash
+./bin/isu ssh isu1 'sudo alp ltsv --file /var/log/nginx/access_ltsv.log --config /dev/stdin' < config/alp.yml
+./bin/isu ssh isu4 'sudo -u postgres psql -X -d isureal -c "SHOW log_min_duration_statement;"'
+```
+
 現在のツール一覧、追加時の配置先と CLI 化の方針は [AGENTS.md の計測・分析ツールの追加方針](AGENTS.md#計測分析ツールの追加方針)、ALP の実行手順は [ALP の設定と使い方](AGENTS.md#alp-の設定と使い方) を参照してください。

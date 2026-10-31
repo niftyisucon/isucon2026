@@ -1,4 +1,4 @@
-# discovery: ip-192-168-1-10 (2026-10-31T01:26:32+00:00)
+# discovery: ip-192-168-1-10 (2026-10-31T01:39:58+00:00)
 
 ## マシン
 
@@ -14,7 +14,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 ## ネットワーク
 
 ```
-2: ens5    inet 192.168.1.10/24 metric 100 brd 192.168.1.255 scope global dynamic ens5\       valid_lft 2423sec preferred_lft 2423sec
+2: ens5    inet 192.168.1.10/24 metric 100 brd 192.168.1.255 scope global dynamic ens5\       valid_lft 3416sec preferred_lft 3416sec
 default via 192.168.1.1 dev ens5 proto dhcp src 192.168.1.10 metric 100 
 192.168.0.2 via 192.168.1.1 dev ens5 proto dhcp src 192.168.1.10 metric 100 
 192.168.1.0/24 dev ens5 proto kernel scope link src 192.168.1.10 metric 100 
@@ -28,7 +28,7 @@ State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
 LISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*    users:(("systemd-resolve",pid=332,fd=15))                                      
 LISTEN 0      4096      127.0.0.54:53        0.0.0.0:*    users:(("systemd-resolve",pid=332,fd=17))                                      
 LISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=677,fd=3),("systemd",pid=1,fd=112))                         
-LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:(("nginx",pid=1193,fd=5),("nginx",pid=1192,fd=5),("nginx",pid=1191,fd=5))
+LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:(("nginx",pid=4973,fd=5),("nginx",pid=4972,fd=5),("nginx",pid=1191,fd=5))
 LISTEN 0      4096               *:8080            *:*    users:(("isureal",pid=1452,fd=6))                                              
 LISTEN 0      4096            [::]:22           [::]:*    users:(("sshd",pid=677,fd=4),("systemd",pid=1,fd=113))                         
 ```
@@ -407,6 +407,14 @@ types {
     video/x-msvideo                                  avi;
 }
 
+# configuration file /etc/nginx/conf.d/isu-ltsv.conf:
+# isu setup が追加。最終提出前に無効化する。
+log_format isu_ltsv "time:$time_local\thost:$remote_addr\tforwardedfor:$http_x_forwarded_for"
+  "\treq:$request\tstatus:$status\tmethod:$request_method\turi:$request_uri"
+  "\tsize:$body_bytes_sent\treferer:$http_referer\tua:$http_user_agent"
+  "\treqtime:$request_time\tapptime:$upstream_response_time\tvhost:$host";
+access_log /var/log/nginx/access_ltsv.log isu_ltsv;
+
 # configuration file /etc/nginx/sites-enabled/isureal.conf:
 server {
   listen 80 default_server;
@@ -444,10 +452,11 @@ Ver Cluster Port Status Owner    Data directory              Log file
 
 ```
 /var/log/nginx:
-total 492
-drwxr-xr-x  2 root     adm      4096 Oct 30 11:59 .
+total 500
+drwxr-xr-x  2 root     adm      4096 Oct 31 01:37 .
 drwxrwxr-x 13 root     syslog   4096 Oct 31 01:07 ..
--rw-r-----  1 www-data adm    482475 Oct 31 01:26 access.log
+-rw-r-----  1 www-data adm    485914 Oct 31 01:39 access.log
+-rw-r--r--  1 root     root      884 Oct 31 01:39 access_ltsv.log
 -rw-r-----  1 www-data adm     10381 Oct 31 01:14 error.log
 
 /var/log/postgresql:
@@ -460,7 +469,7 @@ drwxrwxr-x 13 root     syslog    4096 Oct 31 01:07 ..
 ## 計測ツール
 
 ```
-alp              -
+alp              /usr/local/bin/alp
 pt-query-digest  -
 dstat            -
 pidstat          /usr/bin/pidstat
