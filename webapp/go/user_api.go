@@ -90,16 +90,12 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		defer tx.Rollback()
 		userID := uuid.NewString()
-		var insertedID string
-		err = tx.GetContext(ctx, &insertedID, `INSERT INTO users (id, username, secret_key_hash, display_name, region) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (username) DO NOTHING RETURNING id`,
+		var user User
+		err = tx.GetContext(ctx, &user, `INSERT INTO users (id, username, secret_key_hash, display_name, region) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (username) DO NOTHING RETURNING id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status`,
 			userID, input.Username, hex.EncodeToString(hash[:]), input.DisplayName, input.Region)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusConflict, "username_taken")
 		}
-		if err != nil {
-			return err
-		}
-		user, err := getUser(ctx, tx, userID)
 		if err != nil {
 			return err
 		}
