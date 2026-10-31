@@ -1,4 +1,5 @@
 .local/
+/tools/agent-log/.env
 .DS_Store
 # ビルド成果物は ISU_BUILD_CMD の出力に合わせて追加する。
 # /webapp/go/アプリ名

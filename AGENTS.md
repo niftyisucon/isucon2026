@@ -31,6 +31,16 @@ CLAUDE.md -> AGENTS.md
 
 ## CLI の準備
 
+### Discord の状況共有
+
+作業前に `docs/エージェント連携ガイド.md` を読み、その運用ルールに従います。
+Windows では `pwsh -File ./tools/agent-log/alog.ps1 read` で直近の投稿を確認し、
+`pwsh -File ./tools/agent-log/alog.ps1 post '「着手」対象と作業内容'` などで節目を共有します。
+当日最初は「参加」、ベンチ前後は「ベンチ予約」「ベンチ結果」を投稿します。
+読み取り未設定の場合は競合作業の有無を人間に確認します。
+認証情報は Git 管理外の `tools/agent-log/.env` に置きます。
+詳細は `docs/Discord-ローカルセットアップ.md` を参照してください。
+
 サーバー操作にはリポジトリルートから `./bin/isu` を使います。
 必要なものは Bash、SSH、GNU rsync 3 系、Git、アプリのビルド用ツールチェーンです。macOS では GNU rsync を `brew install rsync` で導入します。
 サーバー側はパスワードなしの sudo が必要で、setup は Debian/Ubuntu 系、サービス操作は systemd を想定しています。
