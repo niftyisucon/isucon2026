@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #14902 window 2026-10-31 04:55:30–04:57:14 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=54125 total_time_sec=162.0 avg_ms=2.99
+--- top patterns by total time ---
+n=35439 total=92.2s avg=2.6ms max=3989ms :: 
+n=862 total=22.1s avg=25.7ms max=1076ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=334 total=14.5s avg=43.4ms max=653ms :: INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($, $, $, ?, $)
+n=228 total=12.3s avg=53.8ms max=293ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE status=? AND id<>$ AND ($=? OR (username,id)>($,$)) ORDER BY username, id
+n=2910 total=6.6s avg=2.3ms max=28ms :: commit
+n=50 total=4.5s avg=90.2ms max=1118ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=18 total=1.8s avg=99.1ms max=1009ms :: LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE
+n=1 total=1.3s avg=1294.9ms max=1295ms :: DELETE FROM notifications WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=1.2s avg=1243.7ms max=1244ms :: DELETE FROM realmojis WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=334 total=0.6s avg=1.9ms max=290ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=1 total=0.6s avg=615.7ms max=616ms :: DELETE FROM posts WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=337 total=0.5s avg=1.5ms max=393ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=1 total=0.5s avg=481.4ms max=481ms :: DELETE FROM comments WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=264 total=0.3s avg=1.2ms max=115ms :: SELECT id FROM users WHERE id = $ FOR NO KEY UPDATE
+n=1 total=0.3s avg=273.6ms max=274ms :: INSERT INTO image_locations (id, created_at)
+n=62 total=0.3s avg=4.0ms max=36ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($,$,$,?)
+n=441 total=0.2s avg=0.4ms max=12ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=62 total=0.2s avg=3.1ms max=10ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=314 total=0.2s avg=0.6ms max=17ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=1 total=0.2s avg=182.8ms max=183ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id, created_at, updated_at)
+n=1 total=0.2s avg=167.3ms max=167ms :: UPDATE users SET display_name = $, updated_at = clock_timestamp() WHERE id = $
+n=546 total=0.1s avg=0.3ms max=10ms :: SELECT
+n=620 total=0.1s avg=0.2ms max=16ms :: SELECT id, requester_id, recipient_id, status, created_at, updated_at FROM friend_requests WHERE id=$
+n=48 total=0.1s avg=2.5ms max=10ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=1 total=0.1s avg=109.5ms max=110ms :: DELETE FROM image_objects WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+--- slowest single queries ---
+3989ms :: 
+2429ms :: 
+2244ms :: 
+2156ms :: 
+1735ms :: 
+1302ms :: 
+1295ms :: DELETE FROM notifications WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+1244ms :: DELETE FROM realmojis WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+1209ms :: 
+1150ms :: 
