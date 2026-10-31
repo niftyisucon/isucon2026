@@ -9,9 +9,8 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 )
 
-// Five application processes can share a PostgreSQL server with 100 slots.
-// Keep 20 slots for monitoring, initialization, administration and reserves.
-const maxDBConnections = 16
+// Keep the existing concurrency limit and reuse more idle connections.
+const maxDBConnections = 30
 const maxIdleDBConnections = 10
 
 func configureDatabasePool(db *sql.DB) {
