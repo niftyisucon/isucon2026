@@ -40,6 +40,9 @@ cmd_pglog() {
   [ ! -e "$output/report.html" ] && [ ! -e "$output/report.txt" ] || die "レポートが既にあります。別の出力先を指定してください"
   if [ -z "$input" ]; then
     [ ! -e "$output/postgresql.log.gz" ] && [ ! -e "$output/log-settings.txt" ] || die "取得済みデータがあります。--input-dir で再利用するか別の出力先を指定してください"
+    if [ -n "$begin" ] || [ -n "$end" ]; then
+      log "期間指定はローカル解析のみです。転送対象は現在のログ全体です（再解析には --input-dir を使用）。"
+    fi
     log "PostgreSQLログ取得: $host:$ISU_PG_LOG_PATH -> $output"
     rscript "$host" lib/isu/remote/postgresql-log.sh info "$ISU_PG_LOG_PATH" "$ISU_DB_NAME" > "$output/log-settings.txt" || return
     if rscript "$host" lib/isu/remote/postgresql-log.sh snapshot "$ISU_PG_LOG_PATH" "$ISU_DB_NAME" > "$output/postgresql.log.gz.tmp"; then

@@ -59,6 +59,7 @@ PostgreSQLログは次のCLIで取得し、ローカルのpgBadgerでHTML・TEXT
 ```
 
 時刻範囲指定、取得済みログの再利用、レポートの見方は [PostgreSQLログの取得・pgBadger集計](docs/pgbadger.md) を参照してください。
+期間指定は解析範囲だけを絞ります。ベンチ直後に1回取得し、以後の再集計は `--input-dir` で同じログを再利用してください（転送し直しません）。
 
 分析ツールの共有設定は `config/` に置きます。ALP の設定は `config/alp.yml` です。
 アプリ3台のログは `/var/log/nginx/access_ltsv.log`、DBのクエリ時間ログは `/var/log/postgresql/postgresql-16-main.log` に出力します。
