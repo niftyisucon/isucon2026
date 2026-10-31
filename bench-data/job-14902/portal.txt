@@ -1,0 +1,41 @@
+Job #14902
+Summary
+ID: 14902
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 13:55:42.484
+Started At: 2026-10-31 13:55:42.551
+Finished At: 2026-10-31 13:57:13.328
+Result: Finished / Passed
+Marked At: 2026-10-31 13:57:13.328
+Score: 19032
+Score Breakdown: base=19032, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T04:56:01.357Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T04:56:01.450Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T04:56:03.784Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T04:56:08.708Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T04:56:09.422Z level=INFO msg="europe 2 日目: 7 人"
+time=2026-10-31T04:56:12.447Z level=INFO msg="america 2 日目: 9 人"
+time=2026-10-31T04:56:17.791Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T04:56:18.377Z level=INFO msg="europe 3 日目: 18 人"
+time=2026-10-31T04:56:21.517Z level=INFO msg="america 3 日目: 20 人"
+time=2026-10-31T04:56:26.879Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T04:56:27.710Z level=INFO msg="europe 4 日目: 33 人"
+time=2026-10-31T04:56:31.069Z level=INFO msg="america 4 日目: 31 人"
+time=2026-10-31T04:56:34.675Z level=INFO msg="asia 5 日目: 18 人"
+time=2026-10-31T04:56:38.198Z level=INFO msg="europe 5 日目: 33 人"
+time=2026-10-31T04:56:39.476Z level=INFO msg="america 5 日目: 31 人"
+time=2026-10-31T04:56:48.671Z level=INFO msg="america 最終日（グランプリ）: 30 人"
+time=2026-10-31T04:56:48.748Z level=INFO msg="europe 最終日（グランプリ）: 32 人"
+time=2026-10-31T04:56:49.506Z level=INFO msg="asia 最終日（グランプリ）: 17 人"
+time=2026-10-31T04:56:57.344Z level=INFO msg="グランプリ: アジア 17 人, ヨーロッパ 32 人, アメリカ 30 人"
+{
+  "pass": true,
+  "score": 19032,
+  "messages": []
+}
+Verification: (1) portal job LIST re-read at 14:00 JST shows #14902 as the newest job (19032, FINISHED); the previously reported "#14796" does not exist in the list. (2) Server-side nginx traffic for this window is a single hump at 04:55–04:56 UTC matching this job's scenario; the phantom's claimed window had zero requests.

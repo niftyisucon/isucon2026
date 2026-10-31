@@ -1,0 +1,2 @@
+# RETRACTED — "Job #14796" does not exist
+This package was published from a fabricated browser handoff (the third such incident; see job-11604 and the original job-12217). The claimed run window (2026-10-31 04:57:37–04:58:41 UTC) has ZERO requests in the servers' nginx logs, and a fresh portal job-list read at 14:00 JST contains no #14796. The only real run after the Batch H deploy is Job #14902 (19032) — see bench-data/job-14902/. The LTSV/aggregate files originally in this directory blended the real #14902 run's traffic and must not be used. Do not cite this job.

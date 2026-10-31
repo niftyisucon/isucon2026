@@ -19,7 +19,7 @@
  <div class="topline"><div class="eyebrow">ISUCON 2026 · PR #64 · ARCHITECTURE WALKTHROUGH</div><span class="status">実装済み／本番未反映の時点の説明</span></div>
  <h1>画像と通知の処理を、4台で分担する。</h1>
  <p class="lead">海外でJPEG検証と画像の再配信を行い、asiaでは認証とデータの整合性を管理します。どこで何を行うか、利用者の操作から順に追える説明資料です。</p>
- <p class="small">対象：<code>codex/edge-image-architecture</code> · 実装 <code>b0099a8</code> 時点 · 2026-10-31作成。ライブの稼働状況を表示するページではありません。</p>
+ <p class="small">対象：<code>codex/edge-image-architecture</code> · main <code>892a119</code> 統合時点 · 2026-10-31作成。ライブの稼働状況を表示するページではありません。</p>
 </header>
 <div class="nav-wrap"><nav role="tablist" aria-label="解説する処理">
  <button id="tab-overview" type="button" role="tab" aria-controls="overview" aria-selected="true">全体構成</button>
@@ -68,7 +68,7 @@
  <tr><td>JPEG検証</td><td>海外の投稿もasiaでデコード</td><td>海外で検証し、共有鍵で証明。asiaの重複デコードを省略</td></tr>
  <tr><td>新規画像の保存</td><td>画像本体をPostgreSQLへINSERT</td><td>ディスクへ本体を保存。DBには管理情報をINSERT</td></tr>
  <tr><td>海外で画像を見る</td><td>取得のたびに本体をasiaから受信</td><td>キャッシュがあれば、有効性の確認だけをasiaへ送る</td></tr>
- <tr><td>SSEの待機</td><td>接続ごとの定期SQL確認</td><td>変更通知でworkerを起こし、購読者をまとめて確認</td></tr>
+ <tr><td>SSEの待機</td><td>プロセス単位の500msバッチ確認（#56）</td><td>同じ集約を維持し、変更通知でもworkerを起こす</td></tr>
  </tbody></table></div>
  <div class="callout"><strong>性能効果は未計測です。</strong> ローカルの正当性検証は通っていますが、この構成での競技ベンチ・実機OS再起動確認は未実施です。</div>
 </section>
@@ -86,10 +86,10 @@
  <p class="small">キャッシュヒット時の204はasiaと海外Goの間だけの内部応答です。海外Goが本体を添えて、利用者には通常の200を返します。初期画像は従来のDB blobから取得します。新規画像の正本ファイルが失われた場合、空の画像を200で返すことはしません。</p>
 </section>
 <section id="notify" class="panel" role="tabpanel" aria-labelledby="tab-notify" hidden>
- <div class="intro"><h2>③ 通知を受け取る</h2><p class="small">SSEは通知を待つ接続です。接続ごとにDBを叩く代わりに、同じGoプロセスのworkerが購読者をまとめて確認します。</p></div>
+ <div class="intro"><h2>③ 通知を受け取る</h2><p class="small">SSEは通知を待つ接続です。mainのバッチ確認を引き継ぎ、同じGoプロセスのworkerが購読者をまとめて確認します。このPRではDBの変更通知による起動も加えます。</p></div>
  <div id="notify-sequence" class="sequence-layout"></div>
  <div class="grid"><div class="note"><h3>NOTIFYは「見に行って」という合図</h3><p>DBから届く変更通知をそのまま利用者へ送ることはありません。workerが通知テーブルを再確認し、本人の通知IDと内容、現在のユーザー状態を確かめて配信します。</p></div><div class="note warn"><h3>取りこぼし対策も残す</h3><p>通常時も5秒ごとのバッチ確認を残します。LISTEN接続が切れた場合やトリガー未導入で起動した場合は500msのバッチ確認を使います。ロールバックされた通知は配信しません。</p></div></div>
- <p class="small">初回購読時にもバッチ確認を起こします。1SQLにまとめても、購読者それぞれの検索処理はDB内部に残ります。退会・リージョン変更・初期化世代の不一致は再確認して接続を終了します。PR #56のバッチ実装を再利用しているため、採用時は重複整理が必要です。</p>
+ <p class="small">初回購読時にもバッチ確認を起こします。1SQLにまとめても、購読者それぞれの検索処理はDB内部に残ります。退会・リージョン変更・初期化世代の不一致は再確認して接続を終了します。PR #56はmainへマージ済みです。同じバッチ実装を維持し、追加のworkerを二重に作らない形で統合しています。</p>
 </section>
 <section id="lifecycle" class="panel" role="tabpanel" aria-labelledby="tab-lifecycle" hidden>
  <div class="intro"><h2>④ 初期化・再起動・切り戻し</h2><p class="small">ファイルがディスクにあることと、利用者が取得できることは別です。有効性はDBで管理し、永続ファイルとキャッシュの役割を分けます。</p></div>
@@ -107,7 +107,7 @@
  <tr><td>新規データを保持する</td><td>新規画像の本体をDB blobへ復元し、整合性を確認してから旧構成へ戻す。環境変数を消して旧バイナリを起動するだけでは不十分。</td></tr>
  </tbody></table></div>
  <div class="callout"><strong>レビュー判定は「保留（人間の判断事項）」です。</strong> 明確なコード不具合の指摘はありませんが、全行レビューによる承認ではありません。実機での切り戻し予行も未実施です。</div>
- <div class="grid"><div class="note"><h3>ローカルで確認済み</h3><ul class="checklist"><li>PostgreSQL16付きの全raceテスト・静的解析・Linuxビルド</li><li>投稿の並行実行・ロールバックをDB保存／ファイル保存の両方で検証</li><li>画像の削除・差し替え・退会、公開範囲・ブロック、署名期限</li><li>初期画像、reset再実行、ZIPエクスポートの画像</li><li>通知のcommit／rollback・世代管理、キャッシュの並行処理</li><li>nginx設定、3ポート起動、プロセス再起動後の画像一致</li></ul></div><div class="note warn"><h3>反映前に残っていること</h3><ul class="checklist"><li>人間による採用判断と、別途の反映許可</li><li>実機OS再起動後のサービス・画像・鍵の復帰確認</li><li>共有鍵をGit管理外・root管理・0600で配置</li><li>ベンチ外の一つの時間帯で設定をまとめて切り替え</li><li>ディスク残量の実測。未参照ファイルGCは未実装</li><li>PR #56の重複整理と、競技ベンチによる性能評価</li></ul></div></div>
+ <div class="grid"><div class="note"><h3>ローカルで確認済み</h3><ul class="checklist"><li>PostgreSQL16付きの全raceテスト・静的解析・Linuxビルド</li><li>投稿の並行実行・ロールバックをDB保存／ファイル保存の両方で検証</li><li>画像の削除・差し替え・退会、公開範囲・ブロック、署名期限</li><li>初期画像、reset再実行、ZIPエクスポートの画像</li><li>通知のcommit／rollback・世代管理、キャッシュの並行処理</li><li>nginx設定、3ポート起動、プロセス再起動後の画像一致</li></ul></div><div class="note warn"><h3>反映前に残っていること</h3><ul class="checklist"><li>人間による採用判断と、別途の反映許可</li><li>実機OS再起動後のサービス・画像・鍵の復帰確認</li><li>共有鍵をGit管理外・root管理・0600で配置</li><li>ベンチ外の一つの時間帯で設定をまとめて切り替え</li><li>ディスク残量の実測。未参照ファイルGCは未実装</li><li>切り替え直前のmain差分確認と、競技ベンチによる性能評価</li></ul></div></div>
 </section>
 <noscript><div class="no-script">JavaScriptを有効にすると処理別の図と手順を切り替えられます。詳細は同じフォルダーの edge-image-architecture.md、またはPR #64をご覧ください。</div></noscript>
 </main>

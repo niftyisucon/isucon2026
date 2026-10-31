@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #14796 window 2026-10-31 04:56:00–04:58:59 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=56607 total_time_sec=149.4 avg_ms=2.64
+--- top patterns by total time ---
+n=39070 total=84.8s avg=2.2ms max=3989ms :: 
+n=816 total=22.0s avg=27.0ms max=1076ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=334 total=14.5s avg=43.4ms max=653ms :: INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($, $, $, ?, $)
+n=228 total=12.3s avg=53.8ms max=293ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE status=? AND id<>$ AND ($=? OR (username,id)>($,$)) ORDER BY username, id
+n=2658 total=6.1s avg=2.3ms max=28ms :: commit
+n=50 total=4.5s avg=90.2ms max=1118ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=17 total=1.8s avg=105.0ms max=1009ms :: LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE
+n=334 total=0.6s avg=1.9ms max=290ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=337 total=0.5s avg=1.5ms max=393ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=237 total=0.3s avg=1.4ms max=115ms :: SELECT id FROM users WHERE id = $ FOR NO KEY UPDATE
+n=62 total=0.3s avg=4.0ms max=36ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($,$,$,?)
+n=62 total=0.2s avg=3.1ms max=10ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=428 total=0.2s avg=0.5ms max=12ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=301 total=0.2s avg=0.6ms max=17ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=1 total=0.2s avg=167.3ms max=167ms :: UPDATE users SET display_name = $, updated_at = clock_timestamp() WHERE id = $
+n=533 total=0.1s avg=0.3ms max=10ms :: SELECT
+n=594 total=0.1s avg=0.2ms max=16ms :: SELECT id, requester_id, recipient_id, status, created_at, updated_at FROM friend_requests WHERE id=$
+n=48 total=0.1s avg=2.5ms max=10ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=30 total=0.1s avg=2.7ms max=12ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES ($,$,$,?)
+n=14 total=0.0s avg=3.5ms max=7ms :: SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false AND datname IN (?);
+n=3223 total=0.0s avg=0.0ms max=1ms :: begin
+n=1553 total=0.0s avg=0.0ms max=1ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=14 total=0.0s avg=2.8ms max=5ms :: SELECT schemaname as schema, relname AS table,
+n=297 total=0.0s avg=0.1ms max=3ms :: UPDATE friend_requests SET status=$, updated_at=clock_timestamp() WHERE id=$ RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=14 total=0.0s avg=2.6ms max=7ms :: SELECT schemaname, relname, indexrelname,
+--- slowest single queries ---
+3989ms :: 
+2429ms :: 
+2244ms :: 
+2156ms :: 
+1735ms :: 
+1302ms :: 
+1150ms :: 
+1131ms :: 
+1118ms :: SELECT id FROM users WHERE id IN ($1,$2) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+1076ms :: SELECT id FROM users WHERE id IN ($1,$2) AND status='active' ORDER BY id COLLATE "C" FOR NO KEY UPDATE
