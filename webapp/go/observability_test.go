@@ -84,6 +84,29 @@ func TestHTTPTraceRecordsRenderedErrorStatus(t *testing.T) {
 	}
 }
 
+func TestEdgeAndCoreShareTrace(t *testing.T) {
+	exporter := testTraceExporter(t)
+	core := echo.New()
+	core.Use(TracingMiddleware())
+	core.GET("/api/me", func(c *echo.Context) error { return c.NoContent(http.StatusOK) })
+	upstream := httptest.NewServer(core)
+	defer upstream.Close()
+	edge := echo.New()
+	edge.Use(TracingMiddleware())
+	edge.Any("/api/*", newEdgeProxy(&Config{EdgeUpstream: upstream.URL, EdgeKey: architectureTestKey}, NewImageCache()))
+	recorder := httptest.NewRecorder()
+	edge.ServeHTTP(recorder, httptest.NewRequest("GET", "/api/me", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatal("trace propagation changed proxy response")
+	}
+	spans := exporter.GetSpans()
+	if len(spans) != 2 || spans[0].Name != "GET /api/me" || spans[1].Name != "GET /api/*" ||
+		spans[0].Parent.SpanID() != spans[1].SpanContext.SpanID() ||
+		spans[0].SpanContext.TraceID() != spans[1].SpanContext.TraceID() {
+		t.Fatal("edge/core were exported as disconnected traces")
+	}
+}
+
 func TestInvalidTracingRatioIsRejected(t *testing.T) {
 	for _, ratio := range []string{"NaN", "-1", "1.1", "invalid"} {
 		t.Run(ratio, func(t *testing.T) {

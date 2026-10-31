@@ -26,7 +26,7 @@ func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_profile_image")
 		}
 
-		prepared, err := h.prepareImage(data)
+		prepared, err := h.prepareImage(c.Request().Context(), data)
 		if err != nil {
 			return err
 		}

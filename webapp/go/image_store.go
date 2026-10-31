@@ -105,7 +105,9 @@ type preparedImage struct {
 	key  *string
 }
 
-func (h *HandlerContext) prepareImage(data []byte) (preparedImage, error) {
+func (h *HandlerContext) prepareImage(ctx context.Context, data []byte) (preparedImage, error) {
+	_, span := startApplicationPhase(ctx, "image.persist")
+	defer span.End()
 	if h.Files == nil {
 		return preparedImage{data: data}, nil
 	}

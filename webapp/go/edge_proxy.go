@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type edgeCachedContext struct{}
@@ -112,6 +113,9 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 				r.Header.Set(validationHeader, edgeMAC(config.EdgeKey, "jpeg", imageValidationValue(data, limit)))
 			}
 		}
+		// Keep edge and core in the same sampled trace. Do not record URL IDs,
+		// request bodies, credentials or the internal validation headers.
+		propagation.TraceContext{}.Inject(r.Context(), propagation.HeaderCarrier(r.Header))
 		proxy.ServeHTTP(c.Response(), r)
 		return nil
 	}

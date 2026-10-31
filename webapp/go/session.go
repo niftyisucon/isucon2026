@@ -46,8 +46,12 @@ func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
 
 	tokenHashBytes := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(tokenHashBytes[:])
+	// Includes database/sql connection acquisition, which the pgx SQL span
+	// starts too late to observe. The difference also includes scheduling/scan.
+	ctx, span := startApplicationPhase(c.Request().Context(), "session.lookup")
+	defer span.End()
 	var session Session
-	err := db.GetContext(c.Request().Context(), &session, `
+	err := db.GetContext(ctx, &session, `
 		SELECT s.user_id, s.token_hash, s.created_at, u.region
 		FROM login_sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.token_hash = $1

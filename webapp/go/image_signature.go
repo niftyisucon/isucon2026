@@ -35,9 +35,16 @@ func imageSignature(key []byte, imageID string, exp int64) []byte {
 
 func signedImageURL(user User, imageID string) string {
 	exp := time.Now().Add(imageURLLifetime).Unix()
+	if !imageURLCacheEnabled {
+		return buildSignedImageURL(user.ImageKey, imageID, exp)
+	}
+	return signedImageURLs.get(user.ImageKey, imageID, exp)
+}
+
+func buildSignedImageURL(key []byte, imageID string, exp int64) string {
 	query := url.Values{
 		"exp": {strconv.FormatInt(exp, 10)},
-		"sig": {base64.RawURLEncoding.EncodeToString(imageSignature(user.ImageKey, imageID, exp))},
+		"sig": {base64.RawURLEncoding.EncodeToString(imageSignature(key, imageID, exp))},
 	}
 	return "/api/images/" + url.PathEscape(imageID) + "?" + query.Encode()
 }
