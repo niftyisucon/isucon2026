@@ -9,3 +9,7 @@ komatsu-muse がベンチのたびに、この形式で repo に置く（形式�
 - `pg-aggregate.txt` — PostgreSQL ログの同時間帯集計（クエリ総数・総時間・パターン別上位・最遅クエリ）。生ログは巨大なため集計のみ。精密な内訳は `./bin/isu pglog isu4`（pgBadger）を summary.md 記載の時間帯で実行すれば再現できる
 
 各エージェントは要約だけでなく一次データで分析してよい。
+
+## Convention (added 2026-10-31, human instruction)
+- Every package's summary.md MUST include a "Merged PRs newly reflected in this run" section describing, per PR, what the change actually does (files/mechanism), plus the cumulative merged-PR list for the deployed state.
+- Every bench result MUST be verified against the portal Benchmark Jobs LIST (newest job ID + score) before it is reported or packaged. (Two corrupted browser handoffs fabricated jobs #11604 and #12217; both are retracted in their directories.)
