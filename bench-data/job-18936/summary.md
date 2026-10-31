@@ -1,0 +1,14 @@
+# Job #18936 — Passed, score 24514 (PR #64: edge image architecture) — NEW BEST, big jump
+- Run window: 2026-10-31 14:44:10–14:45:33 JST (05:44:10–05:45:33 UTC). Deployed: main @ 63438ec + architecture config (see below).
+- Grand prix: asia 16 / europe 42 / america 63 (total 121; previous best run had 78). America population reached 64, europe 45 — the overseas ceiling is gone.
+- Latency vs Job #16824: post avg isu1 0.785->0.455, isu2 2.020->0.793, isu3 1.704->0.792 (overseas posts halved); post creations 585 total (117/197/271, new max). Images avg 0.044/0.237/0.240 (n=2087/867/1183) through the edge path. Feeds isu3 avg 0.380 under much higher load. 5xx = 0.
+- PG: 53,510 queries / 147.0s total (down from 163.0s at far lower activity).
+- Image store after the run: /var/lib/isureal-images = 211MB, 591 files; root disk 33G free (no GC implemented; growth ~200MB/run is not a concern for the remaining contest time).
+- Pre-bench rehearsal (all passed): asia + europe end-to-end register/login/profile-image upload/fetch with byte-identical content; file-backed storage confirmed (storage_key set, blob length 0, content-addressed file present); isu1 OS reboot -> shared process auto-started on 8080/8081/8082, regional services stayed down (ConditionPathExists), key file intact, pre-reboot file image fetched byte-identical after reboot.
+
+## Merged PRs newly reflected in this run
+- PR #64 (merge 63438ec): edge image architecture + shared regional runtime. New post/profile/RealMoji images are stored as content-addressed files under /var/lib/isureal-images on isu1 (fsync file+dir before the DB reference commits; DB keeps owner/type/created_at/storage_key, blob emptied); initial images still come from DB blobs when storage_key IS NULL. isu2/isu3 run an edge app: local JPEG decode/validation with an HMAC proof (shared key in /etc/isureal/architecture.env, root 0600, outside git) so isu1 can skip duplicate decoding, plus a per-image body cache — while signature, expiry and CURRENT visibility are still verified against asia's DB on every request (no TTL authorization, no unconditional static serving). isu1 serves all three regions from ONE process (ports 8080/8081/8082, shared DB pool/image cache/notification worker); the old isureal-europe/america services are disabled via ConditionPathExists on the key file. Notifications keep PR #56's batched poller and add pg_notify wakeups (architecture.sql triggers) with a 5s fallback poll and initialize-generation guards. architecture.sql also adds image_objects.storage_key and isureal_runtime_state.
+
+## Cumulative merged PRs in this state
+Batches A–I + #64: #2 #6 #3, #10 #14 #18, #28 #43, #23, #60, #45, #47 #48, #51 #26 #27, #46 #53 #54 #57, #49, #56, #52 #55, #64; plus #1 #4 #7 #9 #8 #15. (PR #50 closed unmerged.)
+- Files: portal.txt, isu{1,2,3}-ltsv.txt, aggregate.txt, pg-aggregate.txt (PG slice at isu-db:/tmp/pg-slice-s.txt)
