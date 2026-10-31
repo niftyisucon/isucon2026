@@ -1,10 +1,8 @@
 package isureal
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
-	"image/jpeg"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -55,14 +53,14 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		img, err := jpeg.Decode(bytes.NewReader(data))
-		if err != nil {
-			return NewAPIError(http.StatusBadRequest, "invalid_realmoji")
-		}
-		if img.Bounds().Dx() > 512 || img.Bounds().Dy() > 512 {
+		if err := validateJPEG(c, h, data, 512); err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_realmoji")
 		}
 
+		prepared, err := h.prepareImage(data)
+		if err != nil {
+			return err
+		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
 		post, err := getPost(ctx, h.DB, input.PostID)
@@ -91,7 +89,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		imageID := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($1,$2,$3,'image/jpeg')`, imageID, actor, data); err != nil {
+		if err := h.insertImage(ctx, tx, imageID, actor, prepared, nil); err != nil {
 			return err
 		}
 		h.Images.Put(imageID, &cachedImage{OwnerID: actor, MediaType: "image/jpeg", Data: data})

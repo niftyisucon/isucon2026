@@ -1,10 +1,8 @@
 package isureal
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
-	"image/jpeg"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -77,14 +75,14 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		img, err := jpeg.Decode(bytes.NewReader(imageData))
-		if err != nil {
-			return NewAPIError(http.StatusBadRequest, "invalid_post")
-		}
-		if img.Bounds().Dx() > 4096 || img.Bounds().Dy() > 4096 {
+		if err := validateJPEG(c, h, imageData, 4096); err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_post")
 		}
 
+		prepared, err := h.prepareImage(imageData)
+		if err != nil {
+			return err
+		}
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
 		tx, err := h.DB.BeginTxx(ctx, nil)
@@ -136,7 +134,7 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
 		}
 		imageID := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, imageData, postedAt); err != nil {
+		if err := h.insertImage(ctx, tx, imageID, userID, prepared, &postedAt); err != nil {
 			return err
 		}
 		// 投稿直後に同じリージョンの友達が取得することが多いので、書き込み時にキャッシュへ入れる。

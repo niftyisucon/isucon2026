@@ -15,6 +15,10 @@ type Config struct {
 	DBName         string
 	LogLevel       string
 	TracingEnabled bool
+	ImageDir       string
+	EdgeUpstream   string
+	EdgeKey        string
+	ListenRegions  string
 }
 
 func ConfigFromEnv() *Config {
@@ -27,6 +31,10 @@ func ConfigFromEnv() *Config {
 		DBName:         envOrDefault("ISUREAL_DB_NAME", "isureal"),
 		LogLevel:       envOrDefault("ISUREAL_LOG_LEVEL", "debug"),
 		TracingEnabled: os.Getenv("ISUREAL_TRACING_ENABLED") == "true",
+		ImageDir:       os.Getenv("ISUREAL_IMAGE_DIR"),
+		EdgeUpstream:   os.Getenv("ISUREAL_EDGE_UPSTREAM"),
+		EdgeKey:        os.Getenv("ISUREAL_EDGE_KEY"),
+		ListenRegions:  os.Getenv("ISUREAL_LISTEN_REGIONS"),
 	}
 }
 
