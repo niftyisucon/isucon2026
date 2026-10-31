@@ -1,4 +1,4 @@
-# discovery: ip-192-168-4-10 (2026-10-31T01:26:34+00:00)
+# discovery: ip-192-168-4-10 (2026-10-31T01:39:59+00:00)
 
 ## マシン
 
@@ -7,14 +7,14 @@ Ubuntu 24.04.5 LTS
 7.0.0-1014-aws x86_64
 cpu: 2  mem: 3.7Gi
 Filesystem      Size  Used Avail Use% Mounted on
-/dev/root        58G   24G   34G  42% /
-/dev/root        58G   24G   34G  42% /
+/dev/root        58G   24G   34G  41% /
+/dev/root        58G   24G   34G  41% /
 ```
 
 ## ネットワーク
 
 ```
-2: ens5    inet 192.168.4.10/24 metric 100 brd 192.168.4.255 scope global dynamic ens5\       valid_lft 2422sec preferred_lft 2422sec
+2: ens5    inet 192.168.4.10/24 metric 100 brd 192.168.4.255 scope global dynamic ens5\       valid_lft 3417sec preferred_lft 3417sec
 default via 192.168.4.1 dev ens5 proto dhcp src 192.168.4.10 metric 100 
 192.168.0.2 via 192.168.4.1 dev ens5 proto dhcp src 192.168.4.10 metric 100 
 192.168.4.0/24 dev ens5 proto kernel scope link src 192.168.4.10 metric 100 
@@ -443,12 +443,12 @@ Ver Cluster Port Status Owner    Data directory              Log file
  isureal  | 16 GB
 (2 rows)
 
-            name            |            setting             | unit |               sourcefile                
-----------------------------+--------------------------------+------+-----------------------------------------
+            name            |            setting             | unit |                   sourcefile                   
+----------------------------+--------------------------------+------+------------------------------------------------
  effective_cache_size       | 524288                         | 8kB  | 
  log_directory              | log                            |      | 
  log_filename               | postgresql-%Y-%m-%d_%H%M%S.log |      | 
- log_min_duration_statement | -1                             | ms   | 
+ log_min_duration_statement | 0                              | ms   | /etc/postgresql/16/main/conf.d/99-isu-log.conf
  logging_collector          | off                            |      | 
  maintenance_work_mem       | 65536                          | kB   | 
  max_connections            | 100                            |      | /etc/postgresql/16/main/postgresql.conf
@@ -459,8 +459,8 @@ Ver Cluster Port Status Owner    Data directory              Log file
  work_mem                   | 4096                           | kB   | 
 (12 rows)
 
-            name            |                setting                 | unit |       source       |                 sourcefile                 
-----------------------------+----------------------------------------+------+--------------------+--------------------------------------------
+            name            |                setting                 | unit |       source       |                   sourcefile                   
+----------------------------+----------------------------------------+------+--------------------+------------------------------------------------
  DateStyle                  | ISO, MDY                               |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  TimeZone                   | Etc/UTC                                |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  application_name           | psql                                   |      | client             | 
@@ -474,6 +474,7 @@ Ver Cluster Port Status Owner    Data directory              Log file
  lc_time                    | C.UTF-8                                |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  listen_addresses           | *                                      |      | configuration file | /etc/postgresql/16/main/conf.d/isucon.conf
  log_line_prefix            | %m [%p] %q%u@%d                        |      | configuration file | /etc/postgresql/16/main/postgresql.conf
+ log_min_duration_statement | 0                                      | ms   | configuration file | /etc/postgresql/16/main/conf.d/99-isu-log.conf
  log_timezone               | Etc/UTC                                |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  max_connections            | 100                                    |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  max_wal_size               | 1024                                   | MB   | configuration file | /etc/postgresql/16/main/postgresql.conf
@@ -484,7 +485,7 @@ Ver Cluster Port Status Owner    Data directory              Log file
  ssl_cert_file              | /etc/ssl/certs/ssl-cert-snakeoil.pem   |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  ssl_key_file               | /etc/ssl/private/ssl-cert-snakeoil.key |      | configuration file | /etc/postgresql/16/main/postgresql.conf
  unix_socket_directories    | /var/run/postgresql                    |      | configuration file | /etc/postgresql/16/main/postgresql.conf
-(23 rows)
+(24 rows)
 
          relname         | n_live_tup | n_dead_tup | seq_scan | idx_scan 
 -------------------------+------------+------------+----------+----------
@@ -538,13 +539,13 @@ Ver Cluster Port Status Owner    Data directory              Log file
  initial_friend_requests |      28970 |          0 |        1 |         
  initial_friendships     |      24985 |          0 |        1 |         
  initial_users           |       5000 |          0 |        1 |         
- ip_bans                 |         45 |         29 |      596 |      147
- login_sessions          |        247 |          7 |     2366 |      247
- notifications           |    1854450 |          0 |        6 |    20493
- posting_windows         |       1113 |         15 |     1276 |  2502092
+ ip_bans                 |         45 |         29 |      611 |      147
+ login_sessions          |        247 |          7 |     2378 |      247
+ notifications           |    1854450 |          0 |        6 |    25032
+ posting_windows         |       1113 |         15 |     1276 |  2503605
  posts                   |     625239 |         15 |       10 |  1766966
  realmojis               |    1199351 |          2 |      344 |     5150
- users                   |       5043 |          8 |     2165 |  6209333
+ users                   |       5043 |          8 |     2165 |  6210859
 (57 rows)
 
                 indexrelname                 |    size    | idx_scan 
@@ -599,8 +600,8 @@ Ver Cluster Port Status Owner    Data directory              Log file
  ip_bans_pkey                                | 16 kB      |      147
  login_sessions_pkey                         | 40 kB      |      247
  notifications_pkey                          | 137 MB     |        0
- notifications_user_id_posting_window_id_key | 241 MB     |    20493
- posting_windows_one_active_region           | 16 kB      |     8899
+ notifications_user_id_posting_window_id_key | 241 MB     |    25032
+ posting_windows_one_active_region           | 16 kB      |    10412
  posting_windows_pkey                        | 88 kB      |  2493175
  posting_windows_region_local_date_key       | 72 kB      |       18
  posts_author_id                             | 5536 kB    |     8892
@@ -609,7 +610,7 @@ Ver Cluster Port Status Owner    Data directory              Log file
  realmojis_one_active                        | 141 MB     |     1629
  realmojis_pkey                              | 87 MB      |        7
  realmojis_post_id                           | 49 MB      |     3514
- users_pkey                                  | 472 kB     |  6209333
+ users_pkey                                  | 472 kB     |  6210859
 (61 rows)
 
 ```
@@ -625,10 +626,10 @@ drwxrwxr-x 13 root     syslog 4096 Oct 31 01:07 ..
 -rw-r-----  1 www-data adm      80 Oct 30 11:59 error.log
 
 /var/log/postgresql:
-total 32
-drwxrwxr-t  2 root     postgres  4096 Oct 30 11:59 .
-drwxrwxr-x 13 root     syslog    4096 Oct 31 01:07 ..
--rw-r-----  1 postgres adm      17621 Oct 31 01:22 postgresql-16-main.log
+total 484
+drwxrwxr-t  2 root     postgres   4096 Oct 30 11:59 .
+drwxrwxr-x 13 root     syslog     4096 Oct 31 01:07 ..
+-rw-r-----  1 postgres adm      479653 Oct 31 01:40 postgresql-16-main.log
 ```
 
 ## 計測ツール
