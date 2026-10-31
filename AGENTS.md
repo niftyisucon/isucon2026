@@ -178,6 +178,7 @@ isucon2026/
 | ALP | nginx 役割のホストで未導入ならインストール。LTSV ログを設定 | `config/alp.yml` と後述の手動集計手順を使用 |
 | PostgreSQL クエリ時間ログ | DB 役割のホストで `log_min_duration_statement = 0` を設定し reload | 現構成の出力先は `/var/log/postgresql/postgresql-16-main.log`。設定後に `SHOW log_min_duration_statement` と実ログを確認する |
 | pgBadger | サーバーの `setup` には含めない。`pgbadger-setup` で固定版をローカルへ導入 | `pglog` でログ取得・集計。出力は `.local/pgbadger/`。期間指定・再集計・確認方法は `docs/pgbadger.md` を参照 |
+| PG SQL指紋集計 | 導入不要（ローカルPython 3.9以上） | `./bin/isu pgfingerprint --input FILE`。取得済みUTC stderrログの継続行を復元し、SQL値を除いたJSONを標準出力。未帰属があれば終了コード2。詳細は `docs/pgbadger.md` |
 | pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
 | Splunk Collector・Goトレース | 通常の `setup` では導入しない | Collector導入・起動は `komatsu-muse` へ依頼し、トークン入力は人間と調整。Goトレース設定は `hosts/` のPRと通常のデプロイで反映。旧 `splunk-tracing` は廃止。[導入手順](docs/splunk-setup.md)を参照 |

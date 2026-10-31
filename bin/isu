@@ -29,6 +29,8 @@ Usage: isu <command> [args]
     --begin / --end "YYYY-MM-DD HH:MM:SS"  ログの時刻で解析区間を指定
     --input-dir DIR          取得済みログを再集計（SSH不要）
     --output-dir DIR         出力先を指定（既存レポートは上書きしない）
+  pgfingerprint --input FILE [--begin UTC日時] [--end UTC日時] [--top N]
+                            取得済みPGログの複数行SQLを匿名化集計（JSONを標準出力）
 
 反映
   build                      ローカルでアプリをビルド（ISU_BUILD_CMD）
