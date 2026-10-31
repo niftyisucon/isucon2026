@@ -3,6 +3,7 @@ package isureal
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -35,9 +36,10 @@ func newEdgeProxy(config *Config, cache *ImageCache) echo.HandlerFunc {
 		panic("ISUREAL_EDGE_KEY must contain at least 32 bytes")
 	}
 	proxy := httputil.NewSingleHostReverseProxy(target)
-	proxy.Transport = &http.Transport{Proxy: nil, MaxIdleConns: 128, MaxIdleConnsPerHost: 64, IdleConnTimeout: 90 * time.Second, ResponseHeaderTimeout: 90 * time.Second}
+	proxy.Transport = &http.Transport{Proxy: nil, MaxIdleConns: 128, MaxIdleConnsPerHost: 64, IdleConnTimeout: 30 * time.Second, ResponseHeaderTimeout: 90 * time.Second}
 	proxy.FlushInterval = -1
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		slog.Warn("edge proxy upstream error", "method", r.Method, "path", r.URL.Path, "error", err)
 		http.Error(w, "upstream unavailable", http.StatusBadGateway)
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
