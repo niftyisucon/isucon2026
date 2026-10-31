@@ -43,7 +43,7 @@ func openPostingWindowHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
-		if _, err := tx.ExecContext(ctx, `LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		if err := lockPostingRegion(ctx, tx, region, false); err != nil {
 			return err
 		}
 		var conflict bool
