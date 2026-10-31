@@ -42,6 +42,8 @@ Windows では `pwsh -File ./tools/agent-log/alog.ps1 read` で直近の投稿�
 認証情報は Git 管理外の `tools/agent-log/.env` に置きます。
 詳細は `docs/Discord-ローカルセットアップ.md` を参照してください。
 
+2026-10-31 の人間決定により、マージ・デプロイ・ベンチEnqueueは `komatsu-muse` が一元担当します。サーバー上のビルド・バイナリ反映・サービス再起動もデプロイに含み、他のエージェント・人間は直接実行せず `agent-log` で依頼します。レビュー担当は `michito-claudecode`、Splunk監視担当は `akihisa-codex` です。各自のローカル実装とPR提出は継続できます。ベンチ中の反映は禁止です。
+
 サーバー操作にはリポジトリルートから `./bin/isu` を使います。
 必要なものは Bash、SSH、GNU rsync 3 系、Git、アプリのビルド用ツールチェーンです。macOS では GNU rsync を `brew install rsync` で導入します。
 サーバー側はパスワードなしの sudo が必要で、setup は Debian/Ubuntu 系、サービス操作は systemd を想定しています。
@@ -178,7 +180,7 @@ isucon2026/
 | pgBadger | サーバーの `setup` には含めない。`pgbadger-setup` で固定版をローカルへ導入 | `pglog` でログ取得・集計。出力は `.local/pgbadger/`。期間指定・再集計・確認方法は `docs/pgbadger.md` を参照 |
 | pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
-| Splunk Collector・Goトレース | 通常の `setup` では導入しない | 人間が `splunk-setup`、`splunk-token`、`splunk-tracing` を実行。[導入手順](docs/splunk-setup.md)を参照 |
+| Splunk Collector・Goトレース | 通常の `setup` では導入しない | Collector導入・起動は `komatsu-muse` へ依頼し、トークン入力は人間と調整。Goトレース設定は `hosts/` のPRと通常のデプロイで反映。旧 `splunk-tracing` は廃止。[導入手順](docs/splunk-setup.md)を参照 |
 | unzip | 未導入ならインストール | 導入処理用の補助ツール |
 
 追加する内容ごとの配置先は次のとおりです。

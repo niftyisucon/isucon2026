@@ -1,27 +1,35 @@
 # 4台にSplunk監視を導入する
 
-この手順はレビュー後に人間が実行します。PR作成時点では競技サーバーに未反映です。
+サーバー上のビルド・反映・再起動、マージ、ベンチEnqueueは `komatsu-muse` が一元担当します。他のエージェント・人間は直接実行せず、`agent-log` で依頼してください。下記のサーバー変更コマンドは担当者向けの手順です。人間は秘密値の入力とSplunk画面確認を担当者と調整して行います。ローカルの実装・設定変更はPRとして提出し、レビューは `michito-claudecode` に依頼します。
+
+停止指示や未完了のベンチ予約がある間は、導入・トークン更新・ビルド・反映・再起動を行いません。再開には、人間による全台のスクリプト停止確認と `komatsu-muse` の合意が必要です。
+
+旧 `splunk-tracing` は廃止しました。旧版 `330992a` のコマンドはGoバイナリの反映とアプリ再起動を含むため、実行しないでください。修正版は引数や `-f` にかかわらず、サーバー操作をせずエラーで終了します。
 既存のSplunk Observability Cloud（realm `au0`）に、4台のホストメトリクス、Goアプリ3台のHTTP・SQLトレース、isu4のPostgreSQL統計を送ります。
 
-最初はisu1だけで導入と表示を確認し、その後isu2・isu3・isu4へ展開します。各コードブロックは1コマンドです。コマンドはリポジトリルートで実行します。
+Collectorの初回導入は、担当者がisu1で表示を確認してから残りへ展開します。各コードブロックは1コマンドです。コマンドはリポジトリルートで実行します。
 
 ## 作業の前提を確認する
 
-- ローカルにBash、SSH、GNU rsync 3系、Go 1.26.5以降が必要です。
+- 開発端末にBash、SSH、GNU rsync 3系が必要です。GoアプリのビルドはGo 1.26.5以降を備えた、競技4台以外の開発端末で行います。
 - サーバーにはUbuntu 24.04 amd64、パスワード不要のsudo、GitHubへのHTTPS接続が必要です。
 - SplunkのAPMが利用可能であることは人間に確認済みです。Ingestトークンの値は人間が保持します。
 - `isu4` は共有PostgreSQLサーバーで、従来のSSH名 `isu-db` と同じ接続先です。
-- `-f` は現在のowner未割当とPRブランチでの確認に対応する指定です。owner・mainのチェックを省略するため、対象ホストを人間が確認して使います。ロックは省略しません。
-- `splunk-tracing enable` は、このcheckoutからビルドしたGoバイナリを反映します。他PRを反映済みのサーバーで試す場合は、その変更を含むブランチで実行します。
+- `-f` はowner・mainのチェックを省略します。ベンチとの調整や作業停止指示は省略できません。ロックも省略しません。
+- アプリの反映は `komatsu-muse` が通常のデプロイ手順で行い、対象3台のコミットとトレース設定を揃えます。Splunk導入コマンドはGoバイナリを反映しません。
 
-ブランチを取得します。
+安全修正が含まれる最新mainを取得します。未マージの旧PRブランチは使用しません。
 
 ```bash
 git fetch origin
 ```
 
 ```bash
-git switch codex/splunk-observability
+git switch main
+```
+
+```bash
+git merge --ff-only origin/main
 ```
 
 ```bash
@@ -47,7 +55,7 @@ bash tools/agent-log/alog.sh read
 ```
 
 ```bash
-bash tools/agent-log/alog.sh post '「着手」人間の操作でSplunk監視を導入します。まずisu1で確認し、その後isu2・isu3・isu4に展開します。Goトレース有効化時は対象アプリを再起動します。'
+bash tools/agent-log/alog.sh post '「着手」komatsu-muse担当の作業時間内にSplunk Collectorを導入します。まずisu1で確認し、その後isu2・isu3・isu4に展開します。'
 ```
 
 ## isu1にCollectorを入れる
@@ -79,7 +87,7 @@ bash tools/agent-log/alog.sh post '「着手」人間の操作でSplunk監視を
 ./bin/isu splunk-setup isu2 isu3 isu4 -f
 ```
 
-isu4の監視用DBロールを作ります。この部分は人間が実行するDB変更です。アプリ用ユーザーのパスワードや `pg_hba.conf` は変更しません。
+isu4の監視用DBロールを作ります。このDB変更も `komatsu-muse` に依頼します。アプリ用ユーザーのパスワードや `pg_hba.conf` は変更しません。
 
 ```bash
 ./bin/isu lock isu4 'Splunk PostgreSQL監視ロールの作成'
@@ -115,13 +123,61 @@ isu4の監視用DBロールを作ります。この部分は人間が実行す�
 
 Infrastructureに4ホストが表示されることを確認します。isu4では `postgresql.backends`、`postgresql.commits`、`postgresql.db_size` などのDBメトリクスも確認します。DBロールに与える権限はLOGIN、`pg_monitor`、`isureal` へのCONNECTです。アプリテーブルの書き込み権限は与えません。
 
-## isu1でGoトレースを有効にする
+## Goトレースの設定をPRで準備する
+
+ここからの設定編集も、競技4台以外の開発端末で行います。通常の反映対象には、3台の `30-isucon-tracing.conf` が含まれます。現在の運用報告と同じ、トレース有効・1%サンプリングを管理対象にしています。無効化が必要な場合も、このファイルをPRで変更します。
+
+最新mainを含むことを確認します。この確認が失敗した場合は更新を担当者と調整し、古いブランチを反映しません。
 
 ```bash
-./bin/isu splunk-tracing enable isu1 -f
+git fetch origin
 ```
 
-このコマンドはローカルビルド後、Goバイナリとトレース用systemd drop-inだけを転送し、`isureal-go` だけを再起動します。既存のnginx・PostgreSQL設定や他PRで追加されたログ設定を同期しません。Collectorのhealth checkに失敗した場合はバイナリの転送前に停止します。
+```bash
+git merge-base --is-ancestor origin/main HEAD
+```
+
+設定変更用のブランチを作ります。
+
+```bash
+git switch -c ops/enable-go-tracing
+```
+
+```bash
+cp config/splunk/tracing.conf hosts/isu1/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
+```
+
+```bash
+cp config/splunk/tracing.conf hosts/isu2/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
+```
+
+```bash
+cp config/splunk/tracing.conf hosts/isu3/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
+```
+
+```bash
+git add -- hosts/isu{1,2,3}/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
+```
+
+```bash
+git diff --cached
+```
+
+```bash
+git commit -m '3台のGoトレースを有効にする'
+```
+
+```bash
+git push -u origin HEAD
+```
+
+GitHubでmain向けPRを作成し、レビューを受けます。この段階ではサーバーの設定・バイナリ・プロセスは変更されません。
+
+反映は、人間が全台のスクリプト停止を明示確認し、`komatsu-muse` が作業時間を承認してから行います。`komatsu-muse` が最新の改善を含む同一コミットを3台へ通常のデプロイ手順で反映し、バイナリとトレース設定を確認します。ベンチ中には反映しません。ホストロックの取得成功だけでは、ベンチが停止している証明にはなりません。
+
+## 反映後にGoトレースを確認する
+
+`komatsu-muse` から反映完了の共有を受けてから、確認用リクエストを送ります。
 
 ```bash
 ./bin/isu ssh isu1 'curl --silent --show-error --output /dev/null --write-out "%{http_code}\n" -H "traceparent: 00-1234567890abcdef1234567890abcdef-1234567890abcdef-01" http://127.0.0.1:8080/api/me'
@@ -134,14 +190,6 @@ HTTPスパンは `GET /api/users/:userId` のようなルート名です。配�
 SQLは本文のSHA-256先頭16桁で識別します。同じSQL文字列は同じ値になります。PostgreSQLの `queryid` とは別の識別子です。
 URL内の実ID、クエリ文字列、HTTPヘッダー、本文、SQL本文・引数、DBエラー詳細はトレースに含めません。
 
-```bash
-./bin/isu splunk-tracing enable isu2 -f
-```
-
-```bash
-./bin/isu splunk-tracing enable isu3 -f
-```
-
 isu2は `isureal.region=europe`、isu3は `isureal.region=america` で区別します。
 
 ## ベンチで監視の負荷を確認する
@@ -150,7 +198,7 @@ isu2は `isureal.region=europe`、isu3は `isureal.region=america` で区別し�
 bash tools/agent-log/alog.sh read
 ```
 
-未完了の予約がなければ、人間がベンチを予約します。
+`komatsu-muse` が、人間による全台スクリプト停止確認と3台のコード・設定の一致を確認してから予約します。実行中の操作がある、または状態が不明な間は再開しません。
 
 ```bash
 bash tools/agent-log/alog.sh post '「ベンチ予約」Splunk監視・Goトレース有効化後の正当性とスコアをポータルで確認します。'
@@ -179,20 +227,22 @@ bash tools/agent-log/alog.sh post '「完了」4台のホスト・PostgreSQL統�
 
 ## トレースを無効にする
 
+有効化と同じく、最新mainから設定変更PRを作成します。設定ファイルの削除ではなく、明示的な `false` へ置き換えます。ローカルファイルを削除するだけでは、通常のdeployが同期をスキップし、サーバー側に有効設定が残るためです。
+
 ```bash
-./bin/isu splunk-tracing disable isu1 -f
+cp config/splunk/tracing-disabled.conf hosts/isu1/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
 ```
 
 ```bash
-./bin/isu splunk-tracing disable isu2 -f
+cp config/splunk/tracing-disabled.conf hosts/isu2/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
 ```
 
 ```bash
-./bin/isu splunk-tracing disable isu3 -f
+cp config/splunk/tracing-disabled.conf hosts/isu3/etc/systemd/system/isureal-go.service.d/30-isucon-tracing.conf
 ```
 
-トレース用drop-inを削除して対象Goアプリを再起動します。Goコードはトレース無効の経路に戻り、ホスト・DBメトリクスは継続します。
-ホスト監視も止める場合は、対象ホストのロックを取得し、人間がCollectorを停止します。isu1の例です。
+有効化と同様に差分を確認してPRを作成し、`komatsu-muse` が作業時間を調整して通常のデプロイで反映します。ホスト・DBメトリクスは継続します。
+ホスト監視も止める場合は `komatsu-muse` に依頼します。担当者が実行するisu1の例です。
 
 ```bash
 ./bin/isu lock isu1 'Splunk Collectorの停止'
@@ -213,6 +263,12 @@ bash tools/agent-log/alog.sh post '「完了」4台のホスト・PostgreSQL統�
 PostgreSQLは統計を読み取ります。`pg_stat_statements` の有効化、DB再起動、SQLサンプルの送信は行いません。GoのCPUを消費する関数の特定には、別途pprofを使います。
 OTLP受信、health check、内部メトリクスはすべて `127.0.0.1` で待ち受けます。公開ポートは追加しません。
 
-ローカルでGoのテスト・静的解析、実際のpgxクエリの結果と親スパンとの関連付け、Collector 0.164.0による設定検証、PostgreSQL 16でのpeer認証・メトリクス収集を確認済みです。実サーバーでのインストール、トークン投入、Splunkへの到着、競技ベンチは人間の確認が必要です。
+旧コマンドを実行してもGo・SSH・rsyncを呼ばないことは、次のローカル回帰テストで確認します。
+
+```bash
+bash tests/splunk-tracing.sh
+```
+
+Goのテスト・静的解析、実際のpgxクエリの結果と親スパンとの関連付け、Collector 0.164.0による設定検証、PostgreSQL 16でのpeer認証・メトリクス収集はローカルで確認済みです。人間が共有した画面で4ホストのメトリクス到着も確認しました。PostgreSQL指標は `0 MTS` で到着未確認、Go APMへの到着も未確認です。ベンチ中のアプリ反映が発生した計測については、ベンチ担当が条件を揃えて再確認します。
 
 配布元と設定仕様は、[Collector 0.164.0](https://github.com/signalfx/splunk-otel-collector/releases/tag/v0.164.0)、[PostgreSQL receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.0/receiver/postgresqlreceiver)、[OpenTelemetry Go](https://github.com/open-telemetry/opentelemetry-go)を参照してください。
