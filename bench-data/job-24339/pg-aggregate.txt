@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #24339 window 2026-10-31 06:46:00–06:47:59 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=81124 total_time_sec=227.9 avg_ms=2.81
+--- top patterns by total time ---
+n=45720 total=153.3s avg=3.4ms max=5124ms :: 
+n=282 total=21.5s avg=76.3ms max=4824ms :: SELECT pg_advisory_xact_lock_shared(N, $)
+n=706 total=21.2s avg=30.1ms max=118ms :: WITH candidates AS MATERIALIZED (
+n=6269 total=16.1s avg=2.6ms max=29ms :: commit
+n=2229 total=9.0s avg=4.0ms max=179ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=1003 total=2.8s avg=2.8ms max=38ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type,created_at,storage_key) VALUES($,$,$,?,COALESCE($::timestamptz,clock_timestamp()),$)
+n=104 total=0.7s avg=7.1ms max=151ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=815 total=0.4s avg=0.5ms max=123ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=1353 total=0.4s avg=0.3ms max=13ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=1545 total=0.3s avg=0.2ms max=35ms :: SELECT
+n=811 total=0.3s avg=0.4ms max=79ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=530 total=0.2s avg=0.4ms max=8ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=5 total=0.2s avg=30.5ms max=113ms :: SELECT user_low_id, user_high_id FROM friendships WHERE user_low_id IN ($, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $
+n=58 total=0.2s avg=2.6ms max=8ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=102 total=0.1s avg=1.4ms max=15ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=706 total=0.1s avg=0.2ms max=10ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id=ANY($) AND status=?
+n=2351 total=0.1s avg=0.0ms max=7ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=3 total=0.1s avg=28.6ms max=86ms :: SELECT id FROM users WHERE id=$ AND status=? FOR NO KEY UPDATE
+n=6547 total=0.1s avg=0.0ms max=3ms :: begin
+n=701 total=0.1s avg=0.1ms max=11ms :: SELECT EXISTS(SELECT N FROM block_relations WHERE (blocker_id=$ AND blocked_id=$) OR (blocker_id=$ AND blocked_id=$))
+n=12 total=0.1s avg=4.9ms max=21ms :: SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false AND datname IN (?);
+n=527 total=0.1s avg=0.1ms max=3ms :: UPDATE friend_requests SET status=$, updated_at=clock_timestamp() WHERE id=$ RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=12 total=0.0s avg=3.8ms max=23ms :: SELECT schemaname, relname, indexrelname,
+n=12 total=0.0s avg=3.7ms max=16ms :: SELECT schemaname as schema, relname AS table,
+n=1583 total=0.0s avg=0.0ms max=5ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ?
+--- slowest single queries ---
+5124ms :: 
+4824ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+4103ms :: 
+3787ms :: 
+3773ms :: 
+2803ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2741ms :: 
+2516ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2345ms :: 
+2235ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
