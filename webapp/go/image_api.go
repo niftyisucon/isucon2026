@@ -41,16 +41,37 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		// europe/america から DB までは約100msかかるため、署名鍵・閲覧可否・画像本体を1往復で取得する。
 		// 削除状態は毎回確認する。即時反映も5秒以内の許容範囲に含まれる。
 		var object struct {
+			OwnerUserID   string `db:"owner_user_id"`
 			SecretKeyHash string `db:"secret_key_hash"`
 			Visible       bool   `db:"visible"`
 			Data          []byte `db:"data"`
 			MediaType     string `db:"media_type"`
 		}
-		err = h.DB.GetContext(ctx, &object, `
-   SELECT u.secret_key_hash, v.visible, CASE WHEN v.visible THEN i.data END AS data, i.media_type
+		if cached := h.Images.Get(input.ImageID); cached != nil {
+			// 本体はキャッシュにあるので、image_objects（36パーティション）を引かずに所有者と閲覧可否だけを確認する。
+			object.OwnerUserID, object.MediaType, object.Data = cached.OwnerID, cached.MediaType, cached.Data
+			err = h.DB.GetContext(ctx, &object, `
+   SELECT u.secret_key_hash, COALESCE(
+     u.profile_image_id = $1
+     OR EXISTS (
+       SELECT 1 FROM posts p
+       WHERE p.image_id = $1 AND p.author_id = u.id AND p.deleted_at IS NULL
+     )
+     OR EXISTS (
+       SELECT 1 FROM realmojis r
+       JOIN posts p ON p.id = r.post_id AND p.deleted_at IS NULL
+       JOIN users author ON author.id = p.author_id AND author.status = 'active'
+       WHERE r.image_id = $1 AND r.reactor_id = u.id AND r.replaced_at IS NULL AND r.deleted_at IS NULL
+     ), false) AS visible
+   FROM users u
+   WHERE u.id = $2 AND u.status = 'active'
+  `, input.ImageID, cached.OwnerID)
+		} else {
+			// europe/america から DB までは約100msかかるため、署名鍵・閲覧可否・画像本体を1往復で取得する。
+			err = h.DB.GetContext(ctx, &object, `
+   SELECT i.owner_user_id, u.secret_key_hash, v.visible, CASE WHEN v.visible THEN i.data END AS data, i.media_type
    FROM image_objects i JOIN users u ON u.id = i.owner_user_id AND u.status = 'active'
    CROSS JOIN LATERAL (SELECT COALESCE(
      u.profile_image_id = i.id
@@ -66,6 +87,10 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
      ), false) AS visible) v
    WHERE i.id = $1
   `, input.ImageID)
+			if err == nil && object.Visible {
+				h.Images.Put(input.ImageID, &cachedImage{OwnerID: object.OwnerUserID, MediaType: object.MediaType, Data: object.Data})
+			}
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}

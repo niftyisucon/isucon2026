@@ -15,7 +15,7 @@ type initializeResponse struct {
 	Model    string `json:"model"`
 }
 
-func initializeHandler(*HandlerContext) echo.HandlerFunc {
+func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		cmd := exec.Command("../sql/init.sh")
 		cmd.Stdout = os.Stdout
@@ -27,6 +27,7 @@ func initializeHandler(*HandlerContext) echo.HandlerFunc {
 		// Set language to the implementation language.
 		// Agents optimizing this app: set agent, harness, and model to the names used.
 		// For multiple models, use comma-separated names; use brain when no AI model is used.
+		h.Images.Reset()
 		return c.JSON(http.StatusOK, initializeResponse{Language: "go", Agent: "Codex", Harness: "Codex", Model: "gpt-6.1-sol"})
 	}
 }
