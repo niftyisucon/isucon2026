@@ -49,13 +49,14 @@ CREATE INDEX IF NOT EXISTS friendships_user_high_id ON friendships(user_high_id)
 
 -- 画像 id から created_at を引く対応表（Issue #44）。image_objects は created_at で分割されているため、
 -- 画像取得で created_at を与えて実行時に1パーティションへ絞る。初期データ分は初回だけ作成する。
+-- 183万行をランダム順で B-tree に入れると遅いので、索引なしで一括投入してから一意索引を作る。
 CREATE TABLE IF NOT EXISTS image_locations (
-  id varchar(36) PRIMARY KEY,
+  id varchar(36) NOT NULL,
   created_at timestamptz NOT NULL
 );
 INSERT INTO image_locations (id, created_at)
-SELECT id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1)
-ON CONFLICT DO NOTHING;
+SELECT id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1);
+CREATE UNIQUE INDEX IF NOT EXISTS image_locations_id ON image_locations(id);
 CREATE OR REPLACE FUNCTION image_locations_insert() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO image_locations (id, created_at) VALUES (NEW.id, NEW.created_at) ON CONFLICT DO NOTHING;
