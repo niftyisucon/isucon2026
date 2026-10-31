@@ -70,7 +70,20 @@ func openPostingWindowHandler(h *HandlerContext) echo.HandlerFunc {
   `, windowID, region, localDate, startsAt, startsAt.Add(time.Duration(seconds)*time.Second)); err != nil {
 			return err
 		}
-		if !derived {
+		if derived {
+			// The regional lock fixes membership until this transaction commits.
+			// Keep the random IDs alongside recipients so reads/restarts/rollback
+			// of the writer feature flag do not change notification identities.
+			if _, err := tx.ExecContext(ctx, `
+   UPDATE posting_windows SET (notification_user_ids, notification_ids) = (
+     SELECT coalesce(array_agg(id::text ORDER BY id), ARRAY[]::text[]),
+            coalesce(array_agg(gen_random_uuid()::text ORDER BY id), ARRAY[]::text[])
+     FROM users WHERE region = $1 AND status = 'active'
+   ) WHERE id = $2
+  `, region, windowID); err != nil {
+				return err
+			}
+		} else {
 			if _, err := tx.ExecContext(ctx, `
    INSERT INTO notifications (id, user_id, posting_window_id, created_at)
    SELECT gen_random_uuid()::text, id, $2, $3 FROM users WHERE region = $1 AND status = 'active'

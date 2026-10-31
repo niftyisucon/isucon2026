@@ -6,12 +6,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"log/slog"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -26,26 +24,38 @@ type notificationSubscription struct {
 // One worker queries all live subscriptions in the same database snapshot.
 // 配信はコミット済みの投稿期間、または旧方式の通知行から導出する。
 type notificationPoller struct {
-	db            *sqlx.DB
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wake          chan struct{}
-	listening     atomic.Bool
-	onReset       func()
-	epochSchema   bool
-	derived       bool
-	mu            sync.Mutex
-	subscriptions map[*notificationSubscription]struct{}
-	running       bool
+	db             *sqlx.DB
+	ctx            context.Context
+	cancel         context.CancelFunc
+	wake           chan struct{}
+	listening      atomic.Bool
+	onReset        func()
+	epochSchema    bool
+	derived        bool
+	snapshotSchema bool
+	mu             sync.Mutex
+	subscriptions  map[*notificationSubscription]struct{}
+	running        bool
 }
 
 func newNotificationPoller(db *sqlx.DB) *notificationPoller {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &notificationPoller{db: db, subscriptions: make(map[*notificationSubscription]struct{}), ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), derived: derivedNotificationsEnabled()}
+	p := &notificationPoller{db: db, subscriptions: make(map[*notificationSubscription]struct{}), ctx: ctx, cancel: cancel, wake: make(chan struct{}, 1), derived: derivedNotificationsEnabled()}
+	if db != nil {
+		if err := db.Get(&p.snapshotSchema, `SELECT count(*)=2 FROM pg_attribute WHERE attrelid=to_regclass('posting_windows') AND attname IN ('notification_user_ids','notification_ids') AND NOT attisdropped`); err != nil {
+			cancel()
+			panic("check notification snapshot schema: " + err.Error())
+		}
+		if p.derived && !p.snapshotSchema {
+			cancel()
+			panic("run notification-snapshots.sql before enabling derived notifications")
+		}
+	}
+	return p
 }
 
 func derivedNotificationsEnabled() bool {
-	return os.Getenv("ISUREAL_DERIVED_NOTIFICATIONS") != "false"
+	return os.Getenv("ISUREAL_DERIVED_NOTIFICATIONS") == "true"
 }
 
 func (p *notificationPoller) subscribe(userID, region string, since time.Time, epoch ...string) *notificationSubscription {
@@ -102,11 +112,36 @@ const notificationPollQuery = `
  ) x ON true`
 
 const derivedNotificationPollQuery = `
- SELECT s.ordinal, u.region AS user_region, NULL::text AS id, w.id AS posting_window_id, w.region, w.starts_at AS created_at
- FROM ROWS FROM(jsonb_to_recordset($1::jsonb) AS (user_id text, since timestamptz))
- WITH ORDINALITY AS s(user_id, since, ordinal)
- LEFT JOIN users u ON u.id = s.user_id AND u.status = 'active'
- LEFT JOIN posting_windows w ON w.region = u.region AND w.ended_at IS NULL AND w.starts_at > s.since`
+ WITH subscribers AS MATERIALIZED (
+   SELECT s.ordinal, s.user_id, s.since, u.region AS user_region
+   FROM ROWS FROM(jsonb_to_recordset($1::jsonb) AS (user_id text, since timestamptz))
+   WITH ORDINALITY AS s(user_id, since, ordinal)
+   LEFT JOIN users u ON u.id = s.user_id AND u.status = 'active'
+ ), snapshot_events AS MATERIALIZED (
+   SELECT n.user_id, n.id, w.id AS posting_window_id, w.region, w.starts_at AS created_at
+   FROM posting_windows w
+   CROSS JOIN LATERAL unnest(w.notification_user_ids, w.notification_ids) AS n(user_id, id)
+   WHERE w.ended_at IS NULL
+ ), candidates AS (
+   SELECT s.ordinal, x.id, x.posting_window_id, x.region, x.created_at
+   FROM subscribers s CROSS JOIN LATERAL (
+     SELECT n.id, n.posting_window_id, w.region, n.created_at
+     FROM notifications n JOIN posting_windows w ON w.id = n.posting_window_id
+     WHERE s.user_region IS NOT NULL AND n.user_id = s.user_id
+       AND n.created_at > s.since AND w.ended_at IS NULL AND w.notification_user_ids IS NULL
+     ORDER BY n.created_at, n.id LIMIT 1
+   ) x
+   WHERE EXISTS (SELECT 1 FROM posting_windows WHERE ended_at IS NULL AND notification_user_ids IS NULL)
+   UNION ALL
+   SELECT s.ordinal, n.id, n.posting_window_id, n.region, n.created_at
+   FROM subscribers s JOIN snapshot_events n ON n.user_id = s.user_id AND n.created_at > s.since
+   WHERE s.user_region IS NOT NULL
+ ), first_events AS (
+   SELECT DISTINCT ON (ordinal) ordinal, id, posting_window_id, region, created_at
+   FROM candidates ORDER BY ordinal, created_at, id
+ )
+ SELECT s.ordinal, s.user_region, n.id, n.posting_window_id, n.region, n.created_at
+ FROM subscribers s LEFT JOIN first_events n ON n.ordinal = s.ordinal`
 
 func (p *notificationPoller) run() {
 	ticker := time.NewTicker(500 * time.Millisecond)
@@ -172,13 +207,7 @@ func (p *notificationPoller) deliver(snapshot []*notificationSubscription, rows 
 		if (s.Epoch != "" && s.Epoch != row.Epoch) || row.UserRegion == nil || *row.UserRegion != s.region {
 			s.result <- nil
 		} else if row.PostingWindowID != nil {
-			var id string
-			if p.derived {
-				id = uuid.NewSHA1(uuid.NameSpaceOID, []byte(s.UserID+"\x00"+*row.PostingWindowID)).String()
-			} else {
-				id = *row.ID
-			}
-			s.result <- &getNotificationsResponse{ID: id, PostingWindowID: *row.PostingWindowID, Region: *row.Region, CreatedAt: *row.CreatedAt}
+			s.result <- &getNotificationsResponse{ID: *row.ID, PostingWindowID: *row.PostingWindowID, Region: *row.Region, CreatedAt: *row.CreatedAt}
 		} else {
 			continue
 		}
@@ -240,11 +269,13 @@ func (p *notificationPoller) startListener(dsn string) {
 
 func (p *notificationPoller) query() string {
 	query := notificationPollQuery
-	if p.derived {
+	// Readers understand both representations even when snapshot writes are off.
+	// This preserves in-flight windows when reverting the writer setting.
+	if p.snapshotSchema {
 		query = derivedNotificationPollQuery
 	}
 	if !p.epochSchema {
 		return query
 	}
-	return strings.Replace(query, "SELECT s.ordinal,", "SELECT (SELECT generation::text FROM isureal_runtime_state WHERE id=true) AS epoch, s.ordinal,", 1)
+	return "SELECT (SELECT generation::text FROM isureal_runtime_state WHERE id=true) AS epoch, events.* FROM (" + query + ") events"
 }
