@@ -1,0 +1,25 @@
+Job #22627
+Summary
+ID: 22627
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:27:12.847
+Started At: 2026-10-31 15:27:12.914
+Finished At: 2026-10-31 15:28:43.311
+Result: Finished / Passed
+Marked At: 2026-10-31 15:28:43.311
+Score: 29112
+Score Breakdown: base=29112, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout (excerpts; full text in portal detail)
+time=2026-10-31T06:27:29.129Z asia day1: 18 / europe day1: 7 / america day1: 6
+time=2026-10-31T06:28:07.451Z europe day5: 66 / america day5: 53 / asia day5: 27
+time=2026-10-31T06:28:27.135Z grand prix: asia 23 / europe 65 / america 52
+{
+  "pass": true,
+  "score": 29112,
+  "messages": []
+}
+Verification: portal LIST and detail agree (#22627, 29112); server nginx traffic hump at 06:27–06:28 UTC matches the scenario.
