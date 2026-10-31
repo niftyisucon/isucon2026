@@ -1,4 +1,4 @@
-# isu-recon で matching_groups を埋める（パスパラメータをまとめる）
+# ISUCON2026 Go 実装のルートに対応。feed/kind/action は処理別に区別する。
 sort: sum
 reverse: true
 format: markdown
@@ -6,7 +6,22 @@ limit: 5000
 output: count,1xx,2xx,3xx,4xx,5xx,method,uri,min,max,sum,avg,p99
 ltsv:
   apptime_label: apptime
-matching_groups: []
+matching_groups:
+  - ^/api/users/[^/]+$
+  - ^/api/posts/[^/]+$
+  - ^/api/posts/[^/]+/comments$
+  - ^/api/posts/[^/]+/realmojis$
+  - ^/api/comments/[^/]+$
+  - ^/api/realmojis/[^/]+$
+  - ^/api/images/[^/]+$
+  - ^/api/memories/[^/]+$
+  - ^/api/friend-requests/[^/]+/accept$
+  - ^/api/friend-requests/[^/]+/reject$
+  - ^/api/friend-requests/[^/]+/cancel$
+  - ^/api/friendships/[^/]+$
+  - ^/api/follows/[^/]+$
+  - ^/api/blocks/[^/]+$
+  - ^/api/admin/users/[^/]+/certification$
 # 例（ISUCON14）:
 # matching_groups:
 #   - ^/api/app/rides/[^/]+/evaluation$

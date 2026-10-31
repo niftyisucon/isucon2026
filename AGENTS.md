@@ -36,6 +36,7 @@ CLAUDE.md -> AGENTS.md
 作業前に `docs/エージェント連携ガイド.md` を読み、その運用ルールに従います。
 Windows では `pwsh -File ./tools/agent-log/alog.ps1 read` で直近の投稿を確認し、
 `pwsh -File ./tools/agent-log/alog.ps1 post '「着手」対象と作業内容'` などで節目を共有します。
+単純な `git pull`、資料の読み込み、個人設定の準備など、ローカルだけで完結し他メンバーとの調整が不要な作業は、着手・完了とも投稿不要です。ユーザーが明示的に共有を依頼した場合は投稿します。
 当日最初は「参加」、ベンチ前後は「ベンチ予約」「ベンチ結果」を投稿します。
 読み取り未設定の場合は競合作業の有無を人間に確認します。
 認証情報は Git 管理外の `tools/agent-log/.env` に置きます。
@@ -58,6 +59,24 @@ cp examples/isu.local.conf .local/isu.local.conf
 
 ## コマンドの使い方
 
+### 現在の競技環境（2026-10-31 調査）
+
+| CLI ホスト名 | 競技上の名前 | 役割 |
+|---|---|---|
+| `isu1` | asia1 | nginx、Go アプリ（asia） |
+| `isu2` | europe1 | nginx、Go アプリ（europe） |
+| `isu3` | america1 | nginx、Go アプリ（america） |
+| `isu4` | asia2 | 共有 PostgreSQL 16 |
+
+ルーターはログイン・設定変更が禁止されているため `ISU_HOSTS` に含めません。
+`isu4` の SSH 接続先は、共有済みの `isu-db` と同じです。CLI のホスト属性に Bash 変数を使うため、CLI 内ではハイフンのない `isu4` を使用します。
+ホストの owner は担当確定まで `unassigned` です。反映操作の前に担当者の `ISU_ME` と一致させてください。
+
+`discover` は4台の調査結果を `hosts/<host>/discovery.md` に保存します。環境変数の認証情報は伏せ、実効 systemd 設定・ルート・nginx の全設定・PostgreSQL の稼働状態、DBサイズ、設定、テーブル／インデックス統計も収集します。DB の実スキーマは `hosts/isu4/postgresql-schema.sql` に保存します（調査用で、deploy の反映対象外）。
+`pull` は4台の nginx・PostgreSQL・アプリと guard の systemd ユニット・`/home/isucon/env.sh` を `hosts/<host>/` へ、最初の app ホストの Go 実装・SQL・静的ファイルを `webapp/` へ取り込みます。ビルド済みバイナリと他言語実装は取り込み対象外です。
+`build` は Linux amd64 向けに `webapp/go/isureal` を生成します。
+`setup` は役割別に処理します。nginx ホストでは ALP と LTSV ログ、DB ホストでは `postgresql@16-main` の `conf.d/99-isu-log.conf` に `log_min_duration_statement = 0` を設定して reload します。今回の調査ではサーバー上の `setup` は実行していません。
+
 | コマンド | 用途 |
 |---|---|
 | `./bin/isu help` | 利用できるコマンドを表示。`-h` / `--help` も可 |
@@ -66,7 +85,7 @@ cp examples/isu.local.conf .local/isu.local.conf
 | `./bin/isu ssh isu1` | 指定ホストへ対話 SSH |
 | `./bin/isu ssh isu1 'systemctl status nginx'` | 指定ホストでコマンドを実行 |
 | `./bin/isu discover [host...]` | 構成を調査し `hosts/<host>/discovery.md` に保存 |
-| `./bin/isu setup [host...]` | 計測ツール導入、nginx LTSV ログ・MySQL スローログを設定（冪等） |
+| `./bin/isu setup [host...]` | 役割別に計測ツール導入、nginx LTSV ログ・DBクエリ時間ログを設定（冪等） |
 | `./bin/isu pull [host...]` | サーバー設定を `hosts/<host>/`、最初の app ホストのアプリを `webapp/` に取り込む |
 | `./bin/isu build` | `ISU_BUILD_CMD` でローカルビルド。未設定ならスキップ |
 | `./bin/isu deploy [host...] [-f]` | ビルド → rsync → 変更に応じたサービス再起動 |
@@ -138,7 +157,7 @@ isucon2026/
 | `webapp/` | 全 app ホストへの反映に使う共通のアプリ。`go/` は実装、`sql/` は SQL、`public/` は静的ファイルの配置例であり、CLI が固定で作るものではない |
 
 - `discovery.md` は `discover` が作成します。`pull` だけでは生成されません。
-- `pull` は `ISU_HOST_FILES` に指定された、サーバーに存在するファイル・ディレクトリを取り込みます。存在しなければ警告してスキップします。現在の `ChangeMe.service` は実際のサービス名へ変更してください。
+- `pull` は `ISU_HOST_FILES` に指定された、サーバーに存在するファイル・ディレクトリを取り込みます。存在しなければ警告してスキップし、SSH・rsync の失敗時は処理を中止します。
 - 設定はホスト別です。例えば `isu2:/etc/nginx/nginx.conf` は `hosts/isu2/etc/nginx/nginx.conf` に入ります。
 - アプリは、指定された対象ホストのうち最初に `app` の役割を持つホストから一度だけ取得します。現在の設定で引数なしなら `isu1`、`pull isu2` なら `isu2` です。アプリの取得対象は `ISU_WEBAPP_REMOTE` で指定します。
 - アプリの中身は直接 `webapp/` に入り、`webapp/webapp/` にはなりません。`ISU_SYNC_EXCLUDES`・`ISU_WEBAPP_EXCLUDES`・`ISU_WEBAPP_PULL_EXCLUDES` による除外も適用されます。
@@ -152,8 +171,9 @@ isucon2026/
 
 | ツール | `setup` での処理 | 設定・実行方法 |
 |---|---|---|
-| ALP | 未導入ならインストール。nginx の LTSV ログを設定 | `config/alp.yml` と後述の手動集計手順を使用 |
-| pt-query-digest | 未導入なら percona-toolkit をインストール。MySQL のスローログを設定 | サーバー上で手動実行。専用の共有設定・CLI は未追加 |
+| ALP | nginx 役割のホストで未導入ならインストール。LTSV ログを設定 | `config/alp.yml` と後述の手動集計手順を使用 |
+| PostgreSQL クエリ時間ログ | DB 役割のホストで `log_min_duration_statement = 0` を設定し reload | 現構成の出力先は `/var/log/postgresql/postgresql-16-main.log`。設定後に `SHOW log_min_duration_statement` と実ログを確認する |
+| pt-query-digest | DB が MySQL / MariaDB の場合のみ percona-toolkit とスローログを設定。現構成では導入しない | MySQL / MariaDB 用。PostgreSQL の分析には使用しない |
 | pidstat など | pidstat がなければ sysstat をインストール | サーバー上で手動実行。自動記録・集計は未追加 |
 | unzip | 未導入ならインストール | 導入処理用の補助ツール |
 
@@ -171,21 +191,21 @@ isucon2026/
 | サーバー上で実行する処理 | `lib/isu/remote/<name>.sh`。ローカル側のコマンドから共通関数 `rscript` などで呼び出す |
 | 導入条件・使い方・出力先の説明 | この `AGENTS.md` のツール一覧と手順を更新 |
 
-現在の `setup [host...]` は、対象ホストに同じ導入処理を実行します。引数省略時は全ホストが対象で、役割別のツール選択機能はありません。
+`setup [host...]` は、`isu.conf` の役割とDBサービス名に応じて導入・設定を選びます。引数省略時は全ホストが対象です。
 `config/` に置くだけでは、サーバーへの転送やツールへの読み込みは行われません。実行時に設定パスを指定し、サーバー側で使う場合は転送方法も手順またはコマンドに含めてください。
 
 ## ALP の設定と使い方
 
 ALP の集計設定は `config/alp.yml` に置きます。サーバーへ反映する設定は `hosts/`、個人設定や一時的なログ・集計結果は `.local/`、分析ツールの共有設定は `config/` で管理します。CLI 全体の共有設定 `isu.conf` はルートに置いたままにします。
 
-`config/alp.yml` の `matching_groups` に、本戦アプリのルーティング定義を確認して正規表現を追記してください。ID などのパスパラメータを含む URI をまとめ、エンドポイント単位で集計するために使います。例えば `/api/items/123` と `/api/items/456` をまとめる場合は、既存の `matching_groups: []` を次のように置き換えます。
+`config/alp.yml` の `matching_groups` は、本戦の Go 実装のルーティング定義に合わせて設定済みです。ID などのパスパラメータを含む URI をまとめ、エンドポイント単位で集計するために使います。例えば `/api/items/123` と `/api/items/456` をまとめる場合は、次のような正規表現を追加します。
 
 ```yaml
 matching_groups:
   - ^/api/items/[^/]+$
 ```
 
-この設定例の URI は説明用です。本戦のパスに合わせて編集し、別の処理を過剰にまとめないようにしてください。ファイル内の ISUCON14 の例も参考用です。冒頭コメントの `isu-recon` は元の運用名であり、このリポジトリには同名のスキルはありません。
+この設定例の URI とファイル内の ISUCON14 の例は参考用です。別の処理を過剰にまとめないようにしてください。フィード種別・関係種別・友達申請のアクションは処理別に区別して集計します。
 
 初期設定では合計レスポンス時間（`sum`）の降順で Markdown を出力します。設定オプションの詳細は [ALP の公式ドキュメント](https://github.com/tkuchiki/alp) を参照してください。
 
@@ -209,7 +229,7 @@ cat .local/alp-isu1.md
 3. `setup` で計測環境を準備し、`pull` で設定とアプリを取り込みます。
 4. 取り込んだ内容を編集し、`deploy <host>` で反映します。
 
-- `setup` はサーバーを変更し、nginx の reload と DB の restart を実行します。最終提出前の計測ログの無効化は手動で行います。
+- `setup` はサーバーを変更し、nginx と PostgreSQL の reload を実行します（MySQL / MariaDB 構成の場合はDB restart）。最終提出前の計測ログの無効化は手動で行います。
 - `pull` / `deploy` は rsync の `--delete` を使います。同期先の対象ファイルは削除もされるため、同期方向と除外設定を確認してください。
 - `deploy` はホスト単位のロックを取得し、owner をチェックします。`restart` も owner をチェックします。
 - `ISU_PROD_HOST` への `deploy` / `restart` は、Git の `main` ブランチかつ追跡対象に未コミット変更がない状態が必要です。Git 未初期化なら運用前に初期化・コミットしてください。

@@ -26,11 +26,11 @@ cp examples/isu.local.conf .local/isu.local.conf
 ./bin/isu discover          # hosts/<host>/discovery.md に構成を出力
 ```
 
-調査結果を見て `isu.conf` の `ChangeMe`、役割、管理対象パス、採用する言語、ビルド方法を埋めてください。
-ひな形の言語除外設定は Go 用なので、採用言語に合わせて変更します。
+現在の `isu.conf` は、isu1=asia1、isu2=europe1、isu3=america1、isu4=asia2（共有 PostgreSQL 16）と、Go 実装に対応しています。ルーターは操作対象外です。
+owner は担当確定まで `unassigned` なので、反映操作の前に担当者を設定してください。採用言語を変える場合は除外設定とビルド方法も変更します。
 
 ```bash
-./bin/isu setup             # 計測ツール導入、nginx LTSV ログ・MySQL スローログ設定
+./bin/isu setup             # 役割別に計測ツール導入、nginx LTSV・PostgreSQLクエリ時間ログ設定
 ./bin/isu pull              # サーバー設定とアプリを取り込む
 ./bin/isu deploy isu1       # ビルド → rsync → 変更に応じてサービス再起動
 ```
@@ -39,7 +39,8 @@ cp examples/isu.local.conf .local/isu.local.conf
 `pull` は設定を `hosts/<host>/<サーバーの絶対パス>` に、最初の app ホストのアプリを `webapp/` に取り込みます。
 `pull` と `deploy` は rsync の `--delete` を使うため、同期先の対象ファイルは同期元に合わせて削除もされます。除外設定は `isu.conf` で指定します。
 
-`setup` はパッケージ導入とログ設定を行い、nginx の reload と DB の restart を実行します。
+`discover` は実効サービス設定・DB統計を含む調査結果と、DB の実スキーマ（`hosts/isu4/postgresql-schema.sql`）も収集します。実スキーマは調査用で、deploy の反映対象には含みません。
+`setup` はパッケージ導入とログ設定を行い、nginx と PostgreSQL の reload を実行します（MySQL / MariaDB 構成ではDB restart）。
 最終提出前のログ無効化は手動で行ってください。
 
 `deploy` は owner と本番ホストのチェックを行い、ホスト単位のロックを取ります。
