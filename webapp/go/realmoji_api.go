@@ -2,6 +2,7 @@ package isureal
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"image/jpeg"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 )
 
@@ -65,29 +67,19 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		post, err := getPost(ctx, h.DB, input.PostID)
-		if errors.Is(err, sql.ErrNoRows) {
-			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
-		}
-		if err != nil {
-			return err
-		}
-		if actor == post.AuthorID {
-			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
-		}
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, post.AuthorID)
+		tx, err := beginRealMojiTx(ctx, h.DB, actor, input.PostID)
 		if err != nil {
 			return err
 		}
 		defer tx.Rollback()
-		allowed, err := canViewPost(ctx, tx, actor, post.ID)
+		allowed, err := canViewPost(ctx, tx, actor, input.PostID)
 		if err != nil {
 			return err
 		}
 		if !allowed {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE realmojis SET replaced_at=clock_timestamp() WHERE post_id=$1 AND reactor_id=$2 AND replaced_at IS NULL AND deleted_at IS NULL`, post.ID, actor); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE realmojis SET replaced_at=clock_timestamp() WHERE post_id=$1 AND reactor_id=$2 AND replaced_at IS NULL AND deleted_at IS NULL`, input.PostID, actor); err != nil {
 			return err
 		}
 		imageID := uuid.NewString()
@@ -96,7 +88,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		h.Images.Put(imageID, &cachedImage{OwnerID: actor, MediaType: "image/jpeg", Data: data})
 		id := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp())`, id, post.ID, actor, imageID, input.ReactionType); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp())`, id, input.PostID, actor, imageID, input.ReactionType); err != nil {
 			return err
 		}
 		reaction, err := getRealMoji(ctx, tx, id)
@@ -201,4 +193,43 @@ func deleteRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		return c.NoContent(http.StatusNoContent)
 	}
+}
+
+// Fetch only the author before locking; canViewPost reads the full post after
+// the locks, so changes made while waiting are reflected in authorization.
+func beginRealMojiTx(ctx context.Context, db *sqlx.DB, actor, postID string) (*sqlx.Tx, error) {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	var target struct {
+		AuthorID    string `db:"author_id"`
+		LockedCount int    `db:"locked_count"`
+	}
+	err = tx.GetContext(ctx, &target, `
+ WITH target AS MATERIALIZED (
+   SELECT p.author_id FROM posts p JOIN posting_windows w ON w.id=p.posting_window_id
+   WHERE p.id=$2 AND p.deleted_at IS NULL
+ ), locked AS MATERIALIZED (
+   SELECT u.id FROM users u
+   WHERE u.status='active' AND (u.id=$1 OR u.id=(SELECT author_id FROM target))
+   ORDER BY u.id FOR NO KEY UPDATE
+ )
+ SELECT target.author_id, (SELECT count(*) FROM locked) AS locked_count FROM target`, actor, postID)
+	if err != nil {
+		tx.Rollback()
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, NewAPIError(http.StatusForbidden, "interaction_forbidden")
+		}
+		return nil, err
+	}
+	if actor == target.AuthorID {
+		tx.Rollback()
+		return nil, NewAPIError(http.StatusForbidden, "interaction_forbidden")
+	}
+	if target.LockedCount != 2 {
+		tx.Rollback()
+		return nil, NewAPIError(http.StatusNotFound, "relationship_not_found")
+	}
+	return tx, nil
 }
