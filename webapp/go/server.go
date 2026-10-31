@@ -1,6 +1,7 @@
 package isureal
 
 import (
+	"context"
 	"database/sql"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -56,6 +57,9 @@ func NewRuntime(config *Config) *Runtime {
 	}
 
 	r := &Runtime{DB: db, IPBans: &IPBanList{}, Images: NewImageCache()}
+	if err = prepareUserSearch(context.Background(), db); err != nil {
+		panic("prepare user search: " + err.Error())
+	}
 	if err = db.Get(&r.StorageColumn, `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='image_objects' AND column_name='storage_key')`); err != nil {
 		panic(err)
 	}

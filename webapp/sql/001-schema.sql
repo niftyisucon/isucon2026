@@ -73,6 +73,8 @@ CREATE TABLE users (
   username varchar(64) NOT NULL,
   secret_key_hash text NOT NULL,
   display_name text NOT NULL,
+  search_username text,
+  search_display_name text,
   bio text NOT NULL DEFAULT '',
   profile_image_id varchar(36),
   -- america/europe/asia

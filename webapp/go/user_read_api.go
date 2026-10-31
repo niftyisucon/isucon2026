@@ -41,22 +41,14 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		viewer := GetSession(c).UserID
-		// Keep Unicode matching in Go: SQL lower/ILIKE does not implement
-		// normalizeSearchText's NFC + Unicode case folding. Transfer only the
-		// search fields, then load response/signing data for at most 51 matches.
-		var candidates []struct {
-			ID          string `db:"id"`
-			Username    string `db:"username"`
-			DisplayName string `db:"display_name"`
-		}
-		if err := h.DB.SelectContext(ctx, &candidates, `SELECT id, username, display_name FROM users
-			WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3))
-			AND id NOT IN (SELECT CASE WHEN blocker_id=$1 THEN blocked_id ELSE blocker_id END
-				FROM block_relations WHERE blocker_id=$1 OR blocked_id=$1)
-			ORDER BY username, id`, viewer, input.BeforeUsername, input.BeforeID); err != nil {
+		// Normalized fields use the same Go NFC/case-fold function as before.
+		// NULL fields (legacy rows) remain candidates and are checked in Go.
+		var candidates []searchCandidate
+		query := normalizeSearchText(input.Q)
+		if err := h.DB.SelectContext(ctx, &candidates, searchCandidatesSQL,
+			viewer, input.BeforeUsername, input.BeforeID, query); err != nil {
 			return err
 		}
-		query := normalizeSearchText(input.Q)
 		ids := make([]string, 0, 51)
 		for _, user := range candidates {
 			if strings.Contains(normalizeSearchText(user.Username), query) || strings.Contains(normalizeSearchText(user.DisplayName), query) {
