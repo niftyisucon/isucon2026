@@ -105,7 +105,7 @@ func TestImageVerificationUsesCurrentDatabaseKeyAndState(t *testing.T) {
 	data := jpegFixture(t, 16)
 	mustSQL(t, db, `INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($1,$2,$3,'image/jpeg')`, id, owner.ID, data)
 	mustSQL(t, db, `UPDATE users SET profile_image_id=$1 WHERE id=$2`, id, owner.ID)
-	h := &HandlerContext{DB: db, Images: NewImageCache(), Config: &Config{}}
+	h := &HandlerContext{DB: db, Images: NewImageCache(imageCacheMaxBytes), Config: &Config{}}
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
 	var abuse any
