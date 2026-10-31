@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #25844 window 2026-10-31 07:01:00–07:02:59 UTC
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=77709 total_time_sec=235.8 avg_ms=3.03
+--- top patterns by total time ---
+n=44681 total=161.0s avg=3.6ms max=5264ms :: 
+n=531 total=17.0s avg=32.0ms max=119ms :: WITH candidates AS MATERIALIZED (
+n=1909 total=16.3s avg=8.5ms max=1299ms :: SELECT id FROM users WHERE id IN ($,$) AND status=? ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=218 total=15.6s avg=71.3ms max=4943ms :: SELECT pg_advisory_xact_lock_shared(N, $)
+n=5757 total=13.2s avg=2.3ms max=40ms :: commit
+n=866 total=2.3s avg=2.6ms max=54ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type,created_at,storage_key) VALUES($,$,$,?,COALESCE($::timestamptz,clock_timestamp()),$)
+n=661 total=1.7s avg=2.5ms max=1335ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=101 total=1.4s avg=13.7ms max=201ms :: SELECT id FROM users WHERE id IN ($,$) ORDER BY id COLLATE "C" FOR NO KEY UPDATE
+n=1 total=1.3s avg=1309.9ms max=1310ms :: DELETE FROM notifications WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=1.1s avg=1092.1ms max=1092ms :: DELETE FROM realmojis WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=0.7s avg=658.7ms max=659ms :: DELETE FROM posts WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=0.5s avg=539.4ms max=539ms :: DELETE FROM comments WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1055 total=0.4s avg=0.4ms max=23ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp()) RETURNING id,requester_id,recipient_id,status,created_at,updated_at
+n=124 total=0.3s avg=2.1ms max=9ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=1 total=0.3s avg=253.9ms max=254ms :: INSERT INTO image_locations (id, created_at)
+n=1201 total=0.2s avg=0.2ms max=28ms :: SELECT
+n=203 total=0.2s avg=1.0ms max=9ms :: INSERT INTO users (id, username, secret_key_hash, display_name, region, search_username, search_display_name) VALUES ($, $, $, $, $, $, $) ON CONFLICT (username) DO NOTHING RETURNING id, username, secret_key_hash, displa
+n=604 total=0.2s avg=0.3ms max=23ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=1 total=0.2s avg=183.4ms max=183ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id, created_at, updated_at)
+n=2129 total=0.1s avg=0.1ms max=21ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=1 total=0.1s avg=134.5ms max=135ms :: DELETE FROM image_objects WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=100 total=0.1s avg=1.2ms max=14ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=1 total=0.1s avg=100.7ms max=101ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at)
+n=5748 total=0.1s avg=0.0ms max=6ms :: begin
+n=14 total=0.1s avg=5.9ms max=55ms :: SELECT user_low_id, user_high_id FROM friendships WHERE user_low_id IN ($, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $, $
+--- slowest single queries ---
+5264ms :: 
+4943ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2696ms :: 
+2502ms :: 
+2287ms :: 
+2132ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+2018ms :: 
+1995ms :: SELECT pg_advisory_xact_lock_shared(20261031, $1)
+1869ms :: 
+1570ms :: 
