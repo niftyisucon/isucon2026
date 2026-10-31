@@ -62,7 +62,9 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 			return c.JSON(http.StatusOK, response)
 		}
 		ctx := c.Request().Context()
-		viewer, err := loadViewerContext(ctx, h.DB, GetSession(c).UserID)
+		// Public posts do not depend on FoF; every friends-feed author is already
+		// a direct friend. Following can contain FoF-only visible authors.
+		viewer, err := loadViewerContextWithFoF(ctx, h.DB, GetSession(c).UserID, input.Feed == "following", "")
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
 		}

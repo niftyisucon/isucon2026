@@ -103,7 +103,31 @@ type viewerContext struct {
 }
 
 func loadViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID string) (viewerContext, error) {
+	return loadViewerContextWithFoF(ctx, db, viewerID, true, "")
+}
+
+func loadPostViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID string, post Post) (viewerContext, error) {
+	// Other visibility modes (and the author's own posts) never consult FoF.
+	return loadViewerContextWithFoF(ctx, db, viewerID, post.AuthorID != viewerID && post.Visibility == "friends_of_friends", post.AuthorID)
+}
+
+// An empty authorID loads all second-degree relationships for ranked/following
+// feeds. A nonempty authorID only loads paths to that author. Direct friends,
+// blocks, user status, and today's posting status always come from this query.
+func loadViewerContextWithFoF(ctx context.Context, db sqlx.QueryerContext, viewerID string, includeFoF bool, authorID string) (viewerContext, error) {
 	viewer := viewerContext{Friends: map[string]bool{}, FriendsOfFriends: map[string]bool{}, MutualFriends: map[string]int{}}
+	friendshipsSQL := `'[]'::json`
+	args := []any{viewerID}
+	if includeFoF {
+		where := `f.user_low_id = ANY(ARRAY(SELECT id FROM friends)) OR f.user_high_id = ANY(ARRAY(SELECT id FROM friends))`
+		if authorID != "" {
+			where = `(f.user_low_id = $2 AND f.user_high_id = ANY(ARRAY(SELECT id FROM friends)))
+                OR (f.user_high_id = $2 AND f.user_low_id = ANY(ARRAY(SELECT id FROM friends)))`
+			args = append(args, authorID)
+		}
+		friendshipsSQL = `(SELECT COALESCE(json_agg(json_build_array(f.user_low_id, f.user_high_id)), '[]')
+     FROM friendships f WHERE ` + where + `)`
+	}
 	// europe/america から DB までは約100msかかるため、閲覧者の情報を1往復でまとめて取得する。
 	var row struct {
 		User
@@ -130,11 +154,9 @@ func loadViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID str
     (SELECT COALESCE(json_agg(CASE WHEN blocker_id = $1 THEN blocked_id ELSE blocker_id END), '[]')
      FROM block_relations WHERE blocker_id = $1 OR blocked_id = $1) AS blocked_json,
     (SELECT COALESCE(json_agg(id), '[]') FROM friends) AS friends_json,
-    (SELECT COALESCE(json_agg(json_build_array(f.user_low_id, f.user_high_id)), '[]')
-     FROM friendships f
-     WHERE f.user_low_id = ANY(ARRAY(SELECT id FROM friends)) OR f.user_high_id = ANY(ARRAY(SELECT id FROM friends))) AS friendships_json
+    `+friendshipsSQL+` AS friendships_json
   FROM viewer
- `, viewerID); err != nil {
+ `, args...); err != nil {
 		return viewer, err
 	}
 	viewer.User = row.User
@@ -205,7 +227,7 @@ func canViewPost(ctx context.Context, db sqlx.QueryerContext, viewerID, postID s
 	if err != nil {
 		return false, err
 	}
-	viewer, err := loadViewerContext(ctx, db, viewerID)
+	viewer, err := loadPostViewerContext(ctx, db, viewerID, post.Post)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
