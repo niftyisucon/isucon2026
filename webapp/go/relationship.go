@@ -3,7 +3,6 @@ package isureal
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"net/http"
 	"time"
 
@@ -34,15 +33,17 @@ func beginRelationshipTx(ctx context.Context, db *sqlx.DB, actor, target string)
 	if err != nil {
 		return nil, err
 	}
-	for _, id := range []string{min(actor, target), max(actor, target)} {
-		var lockedID string
-		if err := tx.GetContext(ctx, &lockedID, `SELECT id FROM users WHERE id=$1 AND status='active' FOR NO KEY UPDATE`, id); err != nil {
-			tx.Rollback()
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, NewAPIError(http.StatusNotFound, "relationship_not_found")
-			}
-			return nil, err
-		}
+	// Keep the bytewise ID order used by every two-user relationship operation.
+	// Check relationship state in a subsequent statement: a lock wait can outlive
+	// the snapshot of this SELECT under READ COMMITTED.
+	var lockedIDs []string
+	if err := tx.SelectContext(ctx, &lockedIDs, `SELECT id FROM users WHERE id IN ($1,$2) AND status='active' ORDER BY id COLLATE "C" FOR NO KEY UPDATE`, actor, target); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if len(lockedIDs) != 2 {
+		tx.Rollback()
+		return nil, NewAPIError(http.StatusNotFound, "relationship_not_found")
 	}
 	return tx, nil
 }
