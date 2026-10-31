@@ -1,0 +1,79 @@
+# PostgreSQLログの取得・pgBadger集計
+
+DBのクエリ別実行回数、合計時間、平均時間などをpgBadgerで確認します。
+ログ取得も集計もリポジトリルートから `./bin/isu` を使います。集計処理はローカルで行い、競技DB上では実行しません。
+
+## 準備
+
+ローカルに Bash、Perl、curl、gzip、SSH が必要です。macOSでは既存のPerlを使えます。
+WindowsではWSLなど、これらと `./bin/isu` が使える環境で実行してください。
+
+```bash
+./bin/isu pgbadger-setup
+```
+
+公式pgBadger v13.2の固定コミットを取得し、SHA256検証とPerl構文検査後に `.local/tools/pgbadger/pgbadger` へ配置します。システム全体へのインストールはしません。
+固定バージョン・コミット・SHA256は `isu.conf` にあります。独自の導入先を使う場合は、`.local/isu.local.conf` に `ISU_PGBADGER_BIN=/絶対パス/pgbadger` を指定します。
+
+DB側は既存の `./bin/isu setup isu4` でクエリ時間ログを有効にしておきます。現環境では実施済みです。
+設定は `log_min_duration_statement = 0`、出力先は `/var/log/postgresql/postgresql-16-main.log` です。
+
+## 取得から集計まで
+
+```bash
+./bin/isu pglog isu4
+```
+
+DBホストを省略すると `isu.conf` で最初に `db` の役割を持つホストを選びます。
+DBのログprefix、ログ時刻のタイムゾーン、duration閾値、出力形式を読み取り、現在のログをgzipでローカルへ取得してHTMLとTEXTを生成します。
+取得開始時のログサイズまでを対象にし、取得中にrenameされても開いたファイルを読み続けます。取得中のtruncateを検出した場合は失敗として再取得を求めます。
+
+出力は `.local/pgbadger/isu4-<取得日時UTC>.<一意文字列>/` です。
+
+| ファイル | 内容 |
+|---|---|
+| `postgresql.log.gz` | 取得したログ |
+| `log-settings.txt` | 取得時のprefix・タイムゾーン・閾値・形式（順に4行） |
+| `source.txt` | 取得元ホスト・ログパス・取得完了日時UTC |
+| `report.html` | ブラウザーで確認する集計レポート |
+| `report.txt` | ターミナルやエージェントで読む集計レポート |
+
+コマンド末尾にHTML・TEXT・入力ディレクトリの絶対パスを表示します。`report.html` をブラウザーで開いてください。
+重いSQLを合計時間順、実行回数順、平均時間順に確認できます。TEXTにも同じ集計の主要項目が出ます（上位50件）。
+
+## ベンチの時間帯に絞る
+
+```bash
+./bin/isu pglog isu4 \
+  --begin '2026-10-31 01:45:00' \
+  --end '2026-10-31 01:48:00'
+```
+
+`--begin` / `--end` は **ログに記録されたタイムゾーン** の日時です。現在の `log_timezone` は `Etc/UTC` なので、上の例は日本時間10:45〜10:48です。時刻変換は自動では行いません。
+指定範囲の解析はローカルで行い、転送するログ自体は現在のファイル全体です。ベンチ予約・実行・ログ初期化はこのコマンドでは行いません。
+
+## 取得済みログを再集計する（SSH不要）
+
+```bash
+./bin/isu pglog isu4 \
+  --input-dir .local/pgbadger/取得済みディレクトリ \
+  --begin '2026-10-31 01:45:00' \
+  --end '2026-10-31 01:48:00' \
+  --output-dir .local/pgbadger/job-1557
+```
+
+`--input-dir` 内のログと取得時の設定を使うため、サーバーへは接続しません。
+出力先には新しいディレクトリを指定します。既存レポートは上書きしません。
+pgBadgerのPIDファイル・作業ファイルも出力先ごとに分離するため、異なる出力先への集計は同時に実行できます。
+ログ取得後に解析だけが失敗した場合も、取得済みディレクトリを `--input-dir` に指定して再試行できます。
+
+## 注意点と確認方法
+
+- このCLIはstderr形式の非圧縮PostgreSQLログを取得する構成です。元ログパスは `isu.conf` の `ISU_PG_LOG_PATH` で変更できます。
+- 自動取得するのは現在の1ファイルだけです。ローテーション済みファイルは含めません。対象期間が残っているうちに取得してください。
+- クエリが0件のレポートは正常完了扱いにせず、終了コード1で知らせます。時刻範囲、durationログの有効化、ログ形式を確認してください。
+- `log_min_duration_statement` が0より大きい場合は、その閾値を超えたクエリのみが集計対象です。`-1` はdurationログ無効です。
+- 生ログやレポートにはSQLの値や画像データ等が含まれ得ます。`.local/` はGit管理外のまま使い、チーム外へ公開しないでください。生成ファイルは所有者のみ読み書きできる権限で作成します。
+- ログ取得・解析ではサービス再起動、ログ削除、DBデータ変更は行いません。
+
+公式のオプション・レポート仕様は [pgBadgerドキュメント](https://pgbadger.darold.net/documentation.html)、固定版は [v13.2](https://github.com/darold/pgbadger/releases/tag/v13.2) を参照してください。
