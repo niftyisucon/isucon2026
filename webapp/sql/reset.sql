@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS image_locations (
   created_at timestamptz NOT NULL
 );
 INSERT INTO image_locations (id, created_at)
-SELECT id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1);
+-- 主キーは (id, created_at) なので、念のため id ごとに1行へまとめてから入れる（一意索引の作成で失敗しないように）。
+SELECT DISTINCT ON (id) id, created_at FROM image_objects WHERE NOT EXISTS (SELECT 1 FROM image_locations LIMIT 1)
+ORDER BY id, created_at;
 CREATE UNIQUE INDEX IF NOT EXISTS image_locations_id ON image_locations(id);
 CREATE OR REPLACE FUNCTION image_locations_insert() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
