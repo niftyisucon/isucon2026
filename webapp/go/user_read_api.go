@@ -41,23 +41,42 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		viewer := GetSession(c).UserID
-		var users []User
-		if err := h.DB.SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3)) ORDER BY username, id`, viewer, input.BeforeUsername, input.BeforeID); err != nil {
-			return err
+		// Keep Unicode matching in Go: SQL lower/ILIKE does not implement
+		// normalizeSearchText's NFC + Unicode case folding. Transfer only the
+		// search fields, then load response/signing data for at most 51 matches.
+		var candidates []struct {
+			ID          string `db:"id"`
+			Username    string `db:"username"`
+			DisplayName string `db:"display_name"`
 		}
-		blocked, err := getBlockedUserIDs(ctx, h.DB, viewer)
-		if err != nil {
+		if err := h.DB.SelectContext(ctx, &candidates, `SELECT id, username, display_name FROM users
+			WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3))
+			AND id NOT IN (SELECT CASE WHEN blocker_id=$1 THEN blocked_id ELSE blocker_id END
+				FROM block_relations WHERE blocker_id=$1 OR blocked_id=$1)
+			ORDER BY username, id`, viewer, input.BeforeUsername, input.BeforeID); err != nil {
 			return err
 		}
 		query := normalizeSearchText(input.Q)
-		items := make([]relationshipUserResponse, 0)
+		ids := make([]string, 0, 51)
+		for _, user := range candidates {
+			if strings.Contains(normalizeSearchText(user.Username), query) || strings.Contains(normalizeSearchText(user.DisplayName), query) {
+				ids = append(ids, user.ID)
+				if len(ids) == 51 {
+					break
+				}
+			}
+		}
+		var users []User
+		if len(ids) > 0 {
+			if err := h.DB.SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE id=ANY($1) AND status='active'
+				AND id NOT IN (SELECT CASE WHEN blocker_id=$2 THEN blocked_id ELSE blocker_id END
+					FROM block_relations WHERE blocker_id=$2 OR blocked_id=$2)
+				ORDER BY username, id`, ids, viewer); err != nil {
+				return err
+			}
+		}
+		items := make([]relationshipUserResponse, 0, len(users))
 		for _, user := range users {
-			if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
-				continue
-			}
-			if blocked[user.ID] {
-				continue
-			}
 			if err := user.setImageKey(); err != nil {
 				return err
 			}
