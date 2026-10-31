@@ -1,0 +1,41 @@
+# PostgreSQL log aggregate — Job #12217 window 2026-10-31 04:30:00–04:32:59 UTC (server-log time; portal clock ~+3.5 min for this job)
+# Source: isu-db postgresql-16-main.log; method: komatsu-muse quick normalized grouping (see job-7091 header).
+
+total_queries=43143 total_time_sec=314.3 avg_ms=7.28
+--- top patterns by total time ---
+n=25968 total=157.3s avg=6.1ms max=5634ms :: 
+n=74 total=43.8s avg=592.2ms max=4452ms :: LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE
+n=1153 total=34.3s avg=29.7ms max=4981ms :: SELECT id FROM users WHERE id=$ AND status=? FOR NO KEY UPDATE
+n=208 total=25.5s avg=122.6ms max=388ms :: INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($, $, $, ?, $)
+n=127 total=18.5s avg=145.6ms max=365ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE status=? AND id<>$ AND ($=? OR (username,id)>($,$)) ORDER BY username, id
+n=212 total=14.9s avg=70.1ms max=4966ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $ AND ended_at IS NULL FOR SHARE
+n=1640 total=6.9s avg=4.2ms max=66ms :: commit
+n=1291 total=4.8s avg=3.7ms max=45ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE username = $ FOR NO KEY UPDATE
+n=1 total=1.4s avg=1369.5ms max=1369ms :: DELETE FROM realmojis WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=1.3s avg=1253.3ms max=1253ms :: DELETE FROM notifications WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=1 total=1.0s avg=1020.8ms max=1021ms :: DELETE FROM posts WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=26 total=0.8s avg=29.7ms max=86ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($,$,$,?)
+n=1 total=0.5s avg=458.2ms max=458ms :: DELETE FROM comments WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=13 total=0.4s avg=32.0ms max=144ms :: INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES ($,$,$,?)
+n=208 total=0.3s avg=1.4ms max=155ms :: SELECT id, username, secret_key_hash, display_name, bio, profile_image_id, region, account_type, status FROM users WHERE id = $ AND status = ? FOR NO KEY UPDATE
+n=33 total=0.3s avg=7.6ms max=74ms :: INSERT INTO comments(id,post_id,author_id,body,created_at) VALUES($,$,$,$,clock_timestamp())
+n=56 total=0.2s avg=4.4ms max=38ms :: SELECT EXISTS(SELECT N FROM users WHERE username = $)
+n=26 total=0.2s avg=8.9ms max=25ms :: INSERT INTO realmojis(id,post_id,reactor_id,image_id,reaction_type,created_at) VALUES($,$,$,$,$,clock_timestamp())
+n=72 total=0.2s avg=2.4ms max=41ms :: SELECT
+n=1 total=0.2s avg=172.8ms max=173ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id, created_at, updated_at)
+n=218 total=0.1s avg=0.7ms max=23ms :: INSERT INTO friendships (id, user_low_id, user_high_id, source_request_id) VALUES ($,$,$,$)
+n=252 total=0.1s avg=0.4ms max=5ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at) VALUES ($,$,$,?,clock_timestamp(),clock_timestamp())
+n=1 total=0.1s avg=106.0ms max=106ms :: DELETE FROM image_objects WHERE created_at > (SELECT created_at FROM initial_data_boundary);
+n=724 total=0.1s avg=0.1ms max=54ms :: rollback
+n=1 total=0.1s avg=93.6ms max=94ms :: INSERT INTO friend_requests (id, requester_id, recipient_id, status, created_at, updated_at)
+--- slowest single queries ---
+5634ms :: 
+5394ms :: 
+4981ms :: SELECT id FROM users WHERE id=$1 AND status='active' FOR NO KEY UPDATE
+4966ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+4938ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+4668ms :: SELECT id FROM users WHERE id=$1 AND status='active' FOR NO KEY UPDATE
+4646ms :: SELECT id FROM users WHERE id=$1 AND status='active' FOR NO KEY UPDATE
+4601ms :: SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE
+4576ms :: 
+4534ms :: 
