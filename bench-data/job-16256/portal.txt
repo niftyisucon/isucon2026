@@ -1,0 +1,26 @@
+Job #16256
+Summary
+ID: 16256
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 14:12:31.655
+Started At: 2026-10-31 14:12:31.695
+Finished At: 2026-10-31 14:14:02.332
+Result: Finished / Passed
+Marked At: 2026-10-31 14:14:02.332
+Score: 19809
+Score Breakdown: base=19809, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout (excerpts; full text in portal detail)
+time=2026-10-31T05:12:48.300Z asia day1: 18 / europe day1: 7 / america day1: 6
+time=2026-10-31T05:13:23.173Z asia day5: 22 / europe day5: 31 / america day5: 22
+time=2026-10-31T05:13:45.618Z grand prix: asia 20 / europe 30 / america 21
+(also two "user moved" events for danto_5133 america<->asia)
+{
+  "pass": true,
+  "score": 19809,
+  "messages": []
+}
+Verification: portal LIST and detail agree (#16256, 19809); server nginx traffic hump at 05:12–05:13 UTC matches the scenario window.
