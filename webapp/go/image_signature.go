@@ -7,12 +7,33 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
 
 const imageURLLifetime = 24 * time.Hour
 const imageSignatureIterations = 1000
+
+// A/B rollback retains the signing cache while restoring the original expiry.
+var imageURLExpiryBucket = configuredImageURLExpiryBucket(os.Getenv("ISUREAL_IMAGE_URL_EXPIRY_BUCKET_SECONDS"))
+
+func configuredImageURLExpiryBucket(value string) time.Duration {
+	switch value {
+	case "", "60":
+		return time.Minute
+	case "1":
+		return time.Second
+	default:
+		panic("ISUREAL_IMAGE_URL_EXPIRY_BUCKET_SECONDS must be 1 or 60")
+	}
+}
+
+func imageURLExpiry(now time.Time, bucket time.Duration) int64 {
+	// Round down: URLs remain valid for more than 23h59m and at most 24h.
+	// Only issuance changes. GET still verifies the exact URL expiry and HMAC.
+	return now.Add(imageURLLifetime).Truncate(bucket).Unix()
+}
 
 func imageSigningKey(secretKeyHash string) ([]byte, error) {
 	key, err := hex.DecodeString(secretKeyHash)
@@ -34,7 +55,7 @@ func imageSignature(key []byte, imageID string, exp int64) []byte {
 }
 
 func signedImageURL(user User, imageID string) string {
-	exp := time.Now().Add(imageURLLifetime).Unix()
+	exp := imageURLExpiry(time.Now(), imageURLExpiryBucket)
 	if !imageURLCacheEnabled {
 		return buildSignedImageURL(user.ImageKey, imageID, exp)
 	}

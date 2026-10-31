@@ -59,7 +59,8 @@ func TestImageURLCacheBoundedAndConcurrentReset(t *testing.T) {
 }
 
 // Same initial-history/profile image URLs are repeated in feed/memory responses.
-// A second boundary intentionally misses: the expiry is never rounded down.
+// Explicit expiry inputs still miss across a second boundary; production callers
+// can share a coarser issuance expiry without changing cache-key semantics.
 func BenchmarkImageURLRepeated(b *testing.B) {
 	key := bytes.Repeat([]byte{1}, 32)
 	ids := make([]string, 100)

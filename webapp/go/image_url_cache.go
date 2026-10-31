@@ -12,7 +12,7 @@ const imageURLCacheEntriesPerShard = 1024
 
 // Only memoize the pure signing operation. Every caller still loads the current
 // user/key and checks visibility; image GET still checks current DB state.
-// Expiry is part of the key: URLs retain exactly the original 24-hour lifetime.
+// Expiry is part of the key; the caller chooses the issuance expiry bucket.
 type imageURLCacheKey struct {
 	secret [sha256.Size]byte
 	id     string
