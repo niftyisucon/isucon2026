@@ -55,7 +55,10 @@ func imageSignature(key []byte, imageID string, exp int64) []byte {
 }
 
 func signedImageURL(user User, imageID string) string {
-	exp := imageURLExpiry(time.Now(), imageURLExpiryBucket)
+	exp := user.ImageURLExpiry
+	if exp == 0 {
+		exp = imageURLExpiry(time.Now(), imageURLExpiryBucket)
+	}
 	if !imageURLCacheEnabled {
 		return buildSignedImageURL(user.ImageKey, imageID, exp)
 	}

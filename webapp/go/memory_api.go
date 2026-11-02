@@ -44,11 +44,7 @@ func getMemoriesHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_memory_period")
 		}
-		response, err := listMemories(c.Request().Context(), h.DB, GetSession(c).UserID, start, start.AddDate(0, 1, 0), input.BeforePostedAt, input.BeforeID)
-		if err != nil {
-			return err
-		}
-		return c.JSON(http.StatusOK, response)
+		return respondMemories(c, h, start, start.AddDate(0, 1, 0), input.BeforePostedAt, input.BeforeID)
 	}
 }
 
@@ -62,12 +58,32 @@ func getMemoriesByDateHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_memory_period")
 		}
-		response, err := listMemories(c.Request().Context(), h.DB, GetSession(c).UserID, start, start.AddDate(0, 0, 1), input.BeforePostedAt, input.BeforeID)
+		return respondMemories(c, h, start, start.AddDate(0, 0, 1), input.BeforePostedAt, input.BeforeID)
+	}
+}
+
+func respondMemories(c *echo.Context, h *HandlerContext, start, end time.Time, beforeAt *time.Time, beforeID string) error {
+	if h.Config != nil && edgeMemoryRenderingEnabled() && wantsEdgeMemory(c.Request(), h.Config.EdgeKey) {
+		data, err := loadMemoryData(c.Request().Context(), h.DB, GetSession(c).UserID, start, end, beforeAt, beforeID)
 		if err != nil {
 			return err
 		}
-		return c.JSON(http.StatusOK, getMemoriesByDateResponse(response))
+		body, err := sealMemoryData(data, h.Config.EdgeKey, memoryRequestBinding(c.Request()))
+		if err != nil {
+			return err
+		}
+		if body != nil {
+			c.Response().Header().Set("Cache-Control", "no-store")
+			return c.Blob(http.StatusOK, edgeMemoryContentType, body)
+		}
+		// Large models retain the ordinary response without imposing a new API limit.
+		return c.JSON(http.StatusOK, renderMemoryData(data))
 	}
+	response, err := listMemories(c.Request().Context(), h.DB, GetSession(c).UserID, start, end, beforeAt, beforeID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, response)
 }
 
 func listMemories(ctx context.Context, db sqlx.QueryerContext, userID string, start, end time.Time, beforeAt *time.Time, beforeID string) (getMemoriesResponse, error) {
