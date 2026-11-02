@@ -1,0 +1,44 @@
+Job #24339
+Summary
+ID: 24339
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:45:50.331
+Updated At: 2026-10-31 15:47:18.508
+Started At: 2026-10-31 15:45:50.462
+Finished At: 2026-10-31 15:47:18.505
+Result: Finished / Passed
+Marked At: 2026-10-31 15:47:18.505
+Score: 41096
+Score Breakdown: base=41096, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T06:46:07.568Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T06:46:08.322Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T06:46:10.601Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T06:46:16.540Z level=INFO msg="europe 2 日目: 13 人"
+time=2026-10-31T06:46:17.629Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T06:46:19.677Z level=INFO msg="america 2 日目: 13 人"
+time=2026-10-31T06:46:25.545Z level=INFO msg="europe 3 日目: 33 人"
+time=2026-10-31T06:46:26.305Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T06:46:26.382Z level=INFO msg="user moved" user=rume5225 from=america to=europe
+time=2026-10-31T06:46:28.827Z level=INFO msg="america 3 日目: 31 人"
+time=2026-10-31T06:46:28.895Z level=INFO msg="user moved" user=rume5225 from=europe to=asia
+time=2026-10-31T06:46:34.614Z level=INFO msg="europe 4 日目: 78 人"
+time=2026-10-31T06:46:36.848Z level=INFO msg="asia 4 日目: 19 人"
+time=2026-10-31T06:46:37.802Z level=INFO msg="america 4 日目: 72 人"
+time=2026-10-31T06:46:40.650Z level=INFO msg="user moved" user=rume5225 from=asia to=america
+time=2026-10-31T06:46:43.116Z level=INFO msg="asia 5 日目: 18 人"
+time=2026-10-31T06:46:43.710Z level=INFO msg="europe 5 日目: 147 人"
+time=2026-10-31T06:46:47.242Z level=INFO msg="america 5 日目: 108 人"
+time=2026-10-31T06:46:55.955Z level=INFO msg="europe 最終日（グランプリ）: 146 人"
+time=2026-10-31T06:46:56.000Z level=INFO msg="america 最終日（グランプリ）: 108 人"
+time=2026-10-31T06:46:58.594Z level=INFO msg="asia 最終日（グランプリ）: 17 人"
+time=2026-10-31T06:47:04.515Z level=INFO msg="グランプリ: アジア 11 人, ヨーロッパ 145 人, アメリカ 104 人"
+{
+  "pass": true,
+  "score": 41096,
+  "messages": []
+}

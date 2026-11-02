@@ -1,0 +1,44 @@
+Job #23625
+Summary
+ID: 23625
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:38:26.282
+Updated At: 2026-10-31 15:39:58.664
+Started At: 2026-10-31 15:38:26.330
+Finished At: 2026-10-31 15:39:58.659
+Result: Finished / Passed
+Marked At: 2026-10-31 15:39:58.659
+Score: 40590
+Score Breakdown: base=40590, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T06:38:44.004Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T06:38:44.263Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T06:38:47.050Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T06:38:52.889Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T06:38:52.998Z level=INFO msg="europe 2 日目: 10 人"
+time=2026-10-31T06:38:56.072Z level=INFO msg="america 2 日目: 14 人"
+time=2026-10-31T06:39:00.983Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T06:39:01.442Z level=INFO msg="user moved" user=tachinu.5227 from=america to=europe
+time=2026-10-31T06:39:02.378Z level=INFO msg="europe 3 日目: 24 人"
+time=2026-10-31T06:39:05.175Z level=INFO msg="america 3 日目: 33 人"
+time=2026-10-31T06:39:05.727Z level=INFO msg="user moved" user=tachinu.5227 from=europe to=america
+time=2026-10-31T06:39:11.117Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T06:39:11.176Z level=INFO msg="europe 4 日目: 54 人"
+time=2026-10-31T06:39:14.306Z level=INFO msg="america 4 日目: 78 人"
+time=2026-10-31T06:39:19.204Z level=INFO msg="asia 5 日目: 18 人"
+time=2026-10-31T06:39:19.848Z level=INFO msg="user moved" user=tachinu.5227 from=america to=europe
+time=2026-10-31T06:39:20.224Z level=INFO msg="europe 5 日目: 103 人"
+time=2026-10-31T06:39:23.589Z level=INFO msg="america 5 日目: 120 人"
+time=2026-10-31T06:39:32.270Z level=INFO msg="europe 最終日（グランプリ）: 103 人"
+time=2026-10-31T06:39:32.346Z level=INFO msg="america 最終日（グランプリ）: 119 人"
+time=2026-10-31T06:39:35.399Z level=INFO msg="asia 最終日（グランプリ）: 17 人"
+time=2026-10-31T06:39:40.978Z level=INFO msg="グランプリ: アジア 10 人, ヨーロッパ 103 人, アメリカ 119 人"
+{
+  "pass": true,
+  "score": 40590,
+  "messages": []
+}

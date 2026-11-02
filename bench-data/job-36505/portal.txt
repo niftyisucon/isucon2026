@@ -1,0 +1,44 @@
+Job #36505
+Summary
+ID: 36505
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:47:22.139
+Updated At: 2026-10-31 17:48:49.504
+Started At: 2026-10-31 17:47:22.230
+Finished At: 2026-10-31 17:48:49.500
+Result: Finished / Passed
+Marked At: 2026-10-31 17:48:49.500
+Score: 42342
+Score Breakdown: base=42342, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:47:34.502Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:47:36.331Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:47:39.302Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:47:43.915Z level=INFO msg="asia 2 日目: 34 人"
+time=2026-10-31T08:47:45.495Z level=INFO msg="europe 2 日目: 14 人"
+time=2026-10-31T08:47:48.337Z level=INFO msg="america 2 日目: 15 人"
+time=2026-10-31T08:47:54.367Z level=INFO msg="europe 3 日目: 29 人"
+time=2026-10-31T08:47:55.197Z level=INFO msg="asia 3 日目: 66 人"
+time=2026-10-31T08:47:57.868Z level=INFO msg="america 3 日目: 38 人"
+time=2026-10-31T08:48:03.099Z level=INFO msg="asia 4 日目: 66 人"
+time=2026-10-31T08:48:03.115Z level=INFO msg="user moved" user=ismemia.5435 from=asia to=europe
+time=2026-10-31T08:48:03.414Z level=INFO msg="europe 4 日目: 45 人"
+time=2026-10-31T08:48:07.470Z level=INFO msg="america 4 日目: 52 人"
+time=2026-10-31T08:48:12.626Z level=INFO msg="europe 5 日目: 69 人"
+time=2026-10-31T08:48:13.527Z level=INFO msg="asia 5 日目: 65 人"
+time=2026-10-31T08:48:13.666Z level=INFO msg="user moved" user=toisto_5494 from=asia to=europe
+time=2026-10-31T08:48:13.717Z level=INFO msg="user moved" user=elnaivy.5954 from=europe to=america
+time=2026-10-31T08:48:17.302Z level=INFO msg="america 5 日目: 70 人"
+time=2026-10-31T08:48:24.630Z level=INFO msg="europe 最終日（グランプリ）: 68 人"
+time=2026-10-31T08:48:24.636Z level=INFO msg="america 最終日（グランプリ）: 69 人"
+time=2026-10-31T08:48:27.465Z level=INFO msg="asia 最終日（グランプリ）: 63 人"
+time=2026-10-31T08:48:33.288Z level=INFO msg="グランプリ: アジア 59 人, ヨーロッパ 68 人, アメリカ 69 人"
+{
+  "pass": true,
+  "score": 42342,
+  "messages": []
+}

@@ -1,0 +1,45 @@
+Job #26419
+Summary
+ID: 26419
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 16:07:51.266
+Updated At: 2026-10-31 16:09:24.011
+Started At: 2026-10-31 16:07:51.317
+Finished At: 2026-10-31 16:09:24.007
+Result: Finished / Passed
+Marked At: 2026-10-31 16:09:24.007
+Score: 47155
+Score Breakdown: base=47155, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T07:08:08.673Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T07:08:08.973Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T07:08:11.913Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T07:08:17.328Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T07:08:17.752Z level=INFO msg="europe 2 日目: 15 人"
+time=2026-10-31T07:08:20.692Z level=INFO msg="america 2 日目: 12 人"
+time=2026-10-31T07:08:26.418Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T07:08:26.726Z level=INFO msg="europe 3 日目: 38 人"
+time=2026-10-31T07:08:29.787Z level=INFO msg="america 3 日目: 31 人"
+time=2026-10-31T07:08:35.771Z level=INFO msg="europe 4 日目: 89 人"
+time=2026-10-31T07:08:36.628Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T07:08:36.786Z level=INFO msg="user moved" user=orvinlia-5351 from=europe to=asia
+time=2026-10-31T07:08:39.041Z level=INFO msg="america 4 日目: 70 人"
+time=2026-10-31T07:08:41.366Z level=INFO msg="user moved" user=orvinlia-5351 from=asia to=america
+time=2026-10-31T07:08:43.885Z level=INFO msg="asia 5 日目: 18 人"
+time=2026-10-31T07:08:43.957Z level=INFO msg="user moved" user=rite5734 from=europe to=america
+time=2026-10-31T07:08:44.990Z level=INFO msg="user moved" user=ulzoe_6005 from=america to=asia
+time=2026-10-31T07:08:45.226Z level=INFO msg="europe 5 日目: 161 人"
+time=2026-10-31T07:08:48.152Z level=INFO msg="america 5 日目: 116 人"
+time=2026-10-31T07:08:56.973Z level=INFO msg="europe 最終日（グランプリ）: 160 人"
+time=2026-10-31T07:08:57.107Z level=INFO msg="america 最終日（グランプリ）: 116 人"
+time=2026-10-31T07:08:58.996Z level=INFO msg="asia 最終日（グランプリ）: 18 人"
+time=2026-10-31T07:09:05.636Z level=INFO msg="グランプリ: アジア 15 人, ヨーロッパ 160 人, アメリカ 110 人"
+{
+  "pass": true,
+  "score": 47155,
+  "messages": []
+}

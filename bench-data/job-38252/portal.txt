@@ -1,0 +1,49 @@
+Job #38252
+Summary
+ID: 38252
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: Unknown
+Enqueued At: 2026-10-31 18:43:22.973
+Updated At: 2026-10-31 18:46:26.033
+Started At: 2026-10-31 18:44:56.018
+Finished At: 2026-10-31 18:46:26.027
+Result: Finished / Passed
+Marked At: 2026-10-31 18:46:26.027
+Score: 54385
+Score Breakdown: base=54385, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T09:45:11.158Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T09:45:13.007Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T09:45:14.373Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T09:45:20.150Z level=INFO msg="europe 2 日目: 13 人"
+time=2026-10-31T09:45:20.911Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T09:45:23.212Z level=INFO msg="america 2 日目: 12 人"
+time=2026-10-31T09:45:29.137Z level=INFO msg="europe 3 日目: 30 人"
+time=2026-10-31T09:45:29.677Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T09:45:32.272Z level=INFO msg="america 3 日目: 30 人"
+time=2026-10-31T09:45:38.277Z level=INFO msg="europe 4 日目: 74 人"
+time=2026-10-31T09:45:39.524Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T09:45:39.608Z level=INFO msg="user moved" user=torel-5247 from=europe to=asia
+time=2026-10-31T09:45:40.129Z level=INFO msg="user moved" user=nikoto_5226 from=america to=europe
+time=2026-10-31T09:45:41.674Z level=INFO msg="america 4 日目: 71 人"
+time=2026-10-31T09:45:47.568Z level=INFO msg="europe 5 日目: 147 人"
+time=2026-10-31T09:45:48.280Z level=INFO msg="asia 5 日目: 19 人"
+time=2026-10-31T09:45:48.390Z level=INFO msg="user moved" user=torel-5247 from=asia to=europe
+time=2026-10-31T09:45:48.434Z level=INFO msg="user moved" user=tael5933 from=america to=europe
+time=2026-10-31T09:45:48.434Z level=INFO msg="user moved" user=tokushi.5806 from=america to=asia
+time=2026-10-31T09:45:48.446Z level=INFO msg="user moved" user=reneno5744 from=europe to=asia
+time=2026-10-31T09:45:50.798Z level=INFO msg="america 5 日目: 141 人"
+time=2026-10-31T09:45:59.345Z level=INFO msg="europe 最終日（グランプリ）: 147 人"
+time=2026-10-31T09:45:59.516Z level=INFO msg="america 最終日（グランプリ）: 140 人"
+time=2026-10-31T09:46:02.179Z level=INFO msg="asia 最終日（グランプリ）: 19 人"
+time=2026-10-31T09:46:08.117Z level=INFO msg="グランプリ: アジア 15 人, ヨーロッパ 146 人, アメリカ 139 人"
+{
+  "pass": true,
+  "score": 54385,
+  "messages": [
+    "tateri-6641: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）"
+  ]
+}

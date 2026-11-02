@@ -1,0 +1,57 @@
+Job #3900
+Summary
+ID: 3900
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 11:26:12.515
+Updated At: 2026-10-31 11:27:16.805
+Started At: 2026-10-31 11:26:12.628
+Finished At: 2026-10-31 11:27:16.803
+Result: Finished / Failed
+Marked At: 2026-10-31 11:27:16.803
+Score: 0
+Score Breakdown: base=0, deduction=0
+Conclusion
+Reason: 負荷走行を打ち切りました
+Stdout
+time=2026-10-31T02:26:45.142Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T02:26:45.225Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T02:26:47.841Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T02:26:54.669Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T02:26:57.627Z level=INFO msg="europe 2 日目: 7 人"
+time=2026-10-31T02:26:59.211Z level=INFO msg="america 2 日目: 6 人"
+time=2026-10-31T02:27:02.219Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T02:27:05.302Z level=INFO msg="europe 3 日目: 7 人"
+time=2026-10-31T02:27:08.360Z level=INFO msg="america 3 日目: 6 人"
+time=2026-10-31T02:27:11.260Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T02:27:13.942Z level=INFO msg="europe 4 日目: 7 人"
+time=2026-10-31T02:27:15.199Z level=INFO msg="america 4 日目: 6 人"
+time=2026-10-31T02:27:16.648Z level=INFO msg="グランプリ: アジア 0 人, ヨーロッパ 0 人, アメリカ 0 人"
+{
+  "pass": false,
+  "score": 0,
+  "messages": [
+    "負荷走行を打ち切りました: 30s〜35s のエラー率 70.4%（839/1191 件）が上限 10.0% を超えました",
+    "rudan-5094: 現在の投稿期間を取得できません: GET /api/posting-window/current: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 今日の投稿を取得できません: GET /api/posts/me/current: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 投稿 4c7b2274-47ab-41cc-90af-5df34f116d41 の画像を取得できません: GET /api/images/0290f297-d66f-4b24-9f23-3e8807186d44?exp=1793500031\u0026sig=b_Mpw2rmOXbJUG5yvUvp8cqW0n4QGSdRQZXkyqfLZcE: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: ユーザーを検索できません: GET /api/users?q=sutbul_mini_chilmyeonjo_21: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）",
+    "isorro.5099: ユーザーを検索できません: GET /api/users?q=shine-5046: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）",
+    "isorro.5099: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 届いた友達申請を取得できません: GET /api/relationships/incoming-requests: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 届いた友達申請を取得できません: GET /api/relationships/incoming-requests: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード public を取得できません: GET /api/feeds/public: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: フィード friends-of-friends を取得できません: GET /api/feeds/friends-of-friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "isorro.5099: 届いた友達申請を取得できません: GET /api/relationships/incoming-requests: ステータスコード 502 が返りました（期待値 200、unknown）"
+  ]
+}

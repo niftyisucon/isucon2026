@@ -1,0 +1,44 @@
+Job #33253
+Summary
+ID: 33253
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:16:33.641
+Updated At: 2026-10-31 17:18:04.567
+Started At: 2026-10-31 17:16:33.881
+Finished At: 2026-10-31 17:18:04.564
+Result: Finished / Passed
+Marked At: 2026-10-31 17:18:04.564
+Score: 35026
+Score Breakdown: base=35026, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:16:48.365Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:16:50.558Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:16:53.261Z level=INFO msg="user moved" user=wama.5094 from=europe to=asia
+time=2026-10-31T08:16:53.331Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:16:58.448Z level=INFO msg="asia 2 日目: 34 人"
+time=2026-10-31T08:16:59.394Z level=INFO msg="europe 2 日目: 13 人"
+time=2026-10-31T08:16:59.502Z level=INFO msg="user moved" user=wama.5094 from=asia to=europe
+time=2026-10-31T08:17:02.355Z level=INFO msg="america 2 日目: 14 人"
+time=2026-10-31T08:17:08.254Z level=INFO msg="asia 3 日目: 62 人"
+time=2026-10-31T08:17:08.386Z level=INFO msg="europe 3 日目: 32 人"
+time=2026-10-31T08:17:11.505Z level=INFO msg="america 3 日目: 33 人"
+time=2026-10-31T08:17:13.567Z level=INFO msg="user moved" user=wama.5094 from=europe to=asia
+time=2026-10-31T08:17:16.439Z level=INFO msg="asia 4 日目: 105 人"
+time=2026-10-31T08:17:19.107Z level=INFO msg="europe 4 日目: 56 人"
+time=2026-10-31T08:17:20.779Z level=INFO msg="america 4 日目: 50 人"
+time=2026-10-31T08:17:25.194Z level=INFO msg="asia 5 日目: 105 人"
+time=2026-10-31T08:17:28.680Z level=INFO msg="europe 5 日目: 56 人"
+time=2026-10-31T08:17:30.340Z level=INFO msg="america 5 日目: 50 人"
+time=2026-10-31T08:17:38.450Z level=INFO msg="america 最終日（グランプリ）: 49 人"
+time=2026-10-31T08:17:38.665Z level=INFO msg="europe 最終日（グランプリ）: 55 人"
+time=2026-10-31T08:17:41.452Z level=INFO msg="asia 最終日（グランプリ）: 104 人"
+time=2026-10-31T08:17:47.265Z level=INFO msg="グランプリ: アジア 14 人, ヨーロッパ 51 人, アメリカ 47 人"
+{
+  "pass": true,
+  "score": 35026,
+  "messages": []
+}

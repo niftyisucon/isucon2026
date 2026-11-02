@@ -1,0 +1,24 @@
+Job #6888
+Summary
+ID: 6888
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 12:09:17.003
+Updated At: 2026-10-31 12:09:39.703
+Started At: 2026-10-31 12:09:17.064
+Finished At: 2026-10-31 12:09:39.702
+Result: Finished / Failed
+Marked At: 2026-10-31 12:09:39.702
+Score: 0
+Score Breakdown: base=0, deduction=0
+Conclusion
+Reason: 初期データの検証に失敗しました
+Stdout
+{
+  "pass": false,
+  "score": 0,
+  "messages": [
+    "初期データの検証に失敗しました: 初期データのユーザー club_de_recherche_triple_4141: GET /api/me/export: ステータスコード 502 が返りました（期待値 200、unknown）"
+  ]
+}

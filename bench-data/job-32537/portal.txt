@@ -1,0 +1,46 @@
+Job #32537
+Summary
+ID: 32537
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:09:35.687
+Updated At: 2026-10-31 17:11:03.480
+Started At: 2026-10-31 17:09:35.805
+Finished At: 2026-10-31 17:11:03.477
+Result: Finished / Passed
+Marked At: 2026-10-31 17:11:03.477
+Score: 37455
+Score Breakdown: base=37455, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:09:49.524Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:09:51.681Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:09:54.619Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:09:58.791Z level=INFO msg="asia 2 日目: 31 人"
+time=2026-10-31T08:10:00.768Z level=INFO msg="europe 2 日目: 17 人"
+time=2026-10-31T08:10:03.707Z level=INFO msg="america 2 日目: 14 人"
+time=2026-10-31T08:10:07.457Z level=INFO msg="asia 3 日目: 68 人"
+time=2026-10-31T08:10:09.859Z level=INFO msg="europe 3 日目: 42 人"
+time=2026-10-31T08:10:10.157Z level=INFO msg="user moved" user=toki_5371 from=asia to=america
+time=2026-10-31T08:10:12.859Z level=INFO msg="america 3 日目: 36 人"
+time=2026-10-31T08:10:13.158Z level=INFO msg="user moved" user=toki_5371 from=america to=asia
+time=2026-10-31T08:10:18.084Z level=INFO msg="asia 4 日目: 140 人"
+time=2026-10-31T08:10:18.267Z level=INFO msg="user moved" user=ulmia5759 from=europe to=asia
+time=2026-10-31T08:10:19.720Z level=INFO msg="europe 4 日目: 78 人"
+time=2026-10-31T08:10:23.201Z level=INFO msg="america 4 日目: 54 人"
+time=2026-10-31T08:10:23.518Z level=INFO msg="user moved" user=ulmia5759 from=asia to=europe
+time=2026-10-31T08:10:23.528Z level=INFO msg="user moved" user=toki_5371 from=asia to=america
+time=2026-10-31T08:10:27.671Z level=INFO msg="asia 5 日目: 139 人"
+time=2026-10-31T08:10:32.640Z level=INFO msg="europe 5 日目: 79 人"
+time=2026-10-31T08:10:33.125Z level=INFO msg="america 5 日目: 55 人"
+time=2026-10-31T08:10:39.804Z level=INFO msg="europe 最終日（グランプリ）: 79 人"
+time=2026-10-31T08:10:39.924Z level=INFO msg="america 最終日（グランプリ）: 54 人"
+time=2026-10-31T08:10:42.828Z level=INFO msg="asia 最終日（グランプリ）: 139 人"
+time=2026-10-31T08:10:48.606Z level=INFO msg="グランプリ: アジア 7 人, ヨーロッパ 69 人, アメリカ 54 人"
+{
+  "pass": true,
+  "score": 37455,
+  "messages": []
+}

@@ -1,0 +1,49 @@
+Job #34748
+Summary
+ID: 34748
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:30:44.815
+Updated At: 2026-10-31 17:32:16.194
+Started At: 2026-10-31 17:30:45.248
+Finished At: 2026-10-31 17:32:16.190
+Result: Finished / Passed
+Marked At: 2026-10-31 17:32:16.190
+Score: 50865
+Score Breakdown: base=50865, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:30:59.519Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:31:00.950Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:31:03.940Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:31:06.512Z level=INFO msg="user moved" user=medan_5127 from=america to=asia
+time=2026-10-31T08:31:08.845Z level=INFO msg="asia 2 日目: 22 人"
+time=2026-10-31T08:31:10.174Z level=INFO msg="europe 2 日目: 17 人"
+time=2026-10-31T08:31:10.484Z level=INFO msg="user moved" user=medan_5127 from=asia to=europe
+time=2026-10-31T08:31:12.938Z level=INFO msg="america 2 日目: 12 人"
+time=2026-10-31T08:31:17.306Z level=INFO msg="asia 3 日目: 26 人"
+time=2026-10-31T08:31:19.046Z level=INFO msg="europe 3 日目: 42 人"
+time=2026-10-31T08:31:22.015Z level=INFO msg="america 3 日目: 28 人"
+time=2026-10-31T08:31:22.367Z level=INFO msg="user moved" user=medan_5127 from=europe to=asia
+time=2026-10-31T08:31:22.433Z level=INFO msg="user moved" user=nasu_5314 from=asia to=europe
+time=2026-10-31T08:31:24.656Z level=INFO msg="user moved" user=kiulnu-5368 from=europe to=america
+time=2026-10-31T08:31:28.038Z level=INFO msg="europe 4 日目: 100 人"
+time=2026-10-31T08:31:28.332Z level=INFO msg="asia 4 日目: 42 人"
+time=2026-10-31T08:31:31.427Z level=INFO msg="america 4 日目: 66 人"
+time=2026-10-31T08:31:35.455Z level=INFO msg="asia 5 日目: 63 人"
+time=2026-10-31T08:31:35.488Z level=INFO msg="user moved" user=medan_5127 from=asia to=europe
+time=2026-10-31T08:31:37.696Z level=INFO msg="user moved" user=kiulnu-5368 from=america to=europe
+time=2026-10-31T08:31:38.246Z level=INFO msg="europe 5 日目: 177 人"
+time=2026-10-31T08:31:40.143Z level=INFO msg="user moved" user=rama.6274 from=america to=europe
+time=2026-10-31T08:31:40.530Z level=INFO msg="america 5 日目: 86 人"
+time=2026-10-31T08:31:49.290Z level=INFO msg="america 最終日（グランプリ）: 85 人"
+time=2026-10-31T08:31:49.325Z level=INFO msg="europe 最終日（グランプリ）: 177 人"
+time=2026-10-31T08:31:51.644Z level=INFO msg="asia 最終日（グランプリ）: 61 人"
+time=2026-10-31T08:31:57.901Z level=INFO msg="グランプリ: アジア 50 人, ヨーロッパ 173 人, アメリカ 84 人"
+{
+  "pass": true,
+  "score": 50865,
+  "messages": []
+}

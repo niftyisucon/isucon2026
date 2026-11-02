@@ -1,0 +1,43 @@
+Job #27865
+Summary
+ID: 27865
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 16:22:43.839
+Updated At: 2026-10-31 16:24:15.948
+Started At: 2026-10-31 16:22:43.987
+Finished At: 2026-10-31 16:24:15.946
+Result: Finished / Passed
+Marked At: 2026-10-31 16:24:15.946
+Score: 46267
+Score Breakdown: base=46267, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T07:23:03.001Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T07:23:05.969Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T07:23:07.582Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T07:23:12.023Z level=INFO msg="europe 2 日目: 17 人"
+time=2026-10-31T07:23:12.974Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T07:23:15.151Z level=INFO msg="america 2 日目: 15 人"
+time=2026-10-31T07:23:20.994Z level=INFO msg="europe 3 日目: 39 人"
+time=2026-10-31T07:23:22.491Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T07:23:22.587Z level=INFO msg="user moved" user=maxnoa-5256 from=america to=europe
+time=2026-10-31T07:23:24.261Z level=INFO msg="america 3 日目: 37 人"
+time=2026-10-31T07:23:30.026Z level=INFO msg="europe 4 日目: 91 人"
+time=2026-10-31T07:23:31.096Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T07:23:31.168Z level=INFO msg="user moved" user=maxnoa-5256 from=europe to=asia
+time=2026-10-31T07:23:33.415Z level=INFO msg="america 4 日目: 78 人"
+time=2026-10-31T07:23:39.260Z level=INFO msg="europe 5 日目: 128 人"
+time=2026-10-31T07:23:39.411Z level=INFO msg="asia 5 日目: 20 人"
+time=2026-10-31T07:23:42.513Z level=INFO msg="america 5 日目: 117 人"
+time=2026-10-31T07:23:51.151Z level=INFO msg="america 最終日（グランプリ）: 117 人"
+time=2026-10-31T07:23:51.254Z level=INFO msg="europe 最終日（グランプリ）: 127 人"
+time=2026-10-31T07:23:53.370Z level=INFO msg="asia 最終日（グランプリ）: 19 人"
+time=2026-10-31T07:23:59.932Z level=INFO msg="グランプリ: アジア 19 人, ヨーロッパ 127 人, アメリカ 115 人"
+{
+  "pass": true,
+  "score": 46267,
+  "messages": []
+}

@@ -1,0 +1,56 @@
+Job #3606
+Summary
+ID: 3606
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 11:21:57.761
+Updated At: 2026-10-31 11:22:55.833
+Started At: 2026-10-31 11:21:57.812
+Finished At: 2026-10-31 11:22:55.827
+Result: Finished / Failed
+Marked At: 2026-10-31 11:22:55.827
+Score: 0
+Score Breakdown: base=0, deduction=0
+Conclusion
+Reason: 負荷走行を打ち切りました
+Stdout
+time=2026-10-31T02:22:28.483Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T02:22:28.780Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T02:22:31.885Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T02:22:32.029Z level=INFO msg="user moved" user=marelru_5032 from=asia to=europe
+time=2026-10-31T02:22:36.237Z level=INFO msg="asia 2 日目: 17 人"
+time=2026-10-31T02:22:41.273Z level=INFO msg="europe 2 日目: 8 人"
+time=2026-10-31T02:22:41.696Z level=INFO msg="america 2 日目: 6 人"
+time=2026-10-31T02:22:45.775Z level=INFO msg="asia 3 日目: 19 人"
+time=2026-10-31T02:22:49.152Z level=INFO msg="europe 3 日目: 8 人"
+time=2026-10-31T02:22:49.686Z level=INFO msg="user moved" user=marelru_5032 from=europe to=america
+time=2026-10-31T02:22:50.074Z level=INFO msg="america 3 日目: 7 人"
+time=2026-10-31T02:22:55.742Z level=INFO msg="グランプリ: アジア 0 人, ヨーロッパ 0 人, アメリカ 0 人"
+{
+  "pass": false,
+  "score": 0,
+  "messages": [
+    "負荷走行を打ち切りました: 25s〜30s のエラー率 98.3%（4597/4676 件）が上限 10.0% を超えました",
+    "muma.5166: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）",
+    "muma.5166: ユーザーを検索できません: GET /api/users?q=raolu_huojian_28: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "muma.5166: 友達申請を送れません: POST /api/friend-requests: ステータスコード 502 が返りました（期待値 201、unknown）",
+    "muma.5166: 現在の投稿期間を取得できません: GET /api/posting-window/current: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "muma.5166: 通知を購読できません: GET /api/notifications: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "jihun_park_57: フィード friends-of-friends を取得できません: GET /api/feeds/friends-of-friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "jihun_park_57: フィード public を取得できません: GET /api/feeds/public: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "jihun_park_57: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "hajun_jeong_3501: 履歴を読めません: GET /api/images/6bc52a1d-f430-4d34-aab5-5859bcb7277b?exp=1793416971\u0026sig=7HrOAM1LsrdAyaQr7xdwhzXTWC-aspDcTAGEPNdT2VQ: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "jihun_park_57: フィード following を取得できません: GET /api/feeds/following: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "hanako_sato_1818: ログインできません: POST /api/auth/login: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "subin_yun_2908: ログインできません: POST /api/auth/login: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "hitoyasumi_sento_1900: ログインできません: POST /api/auth/login: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "sutbul_mini_chilmyeonjo_21: フィード friends-of-friends を取得できません: GET /api/feeds/friends-of-friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "ivyho_5054: 投稿 4accfda2-05bf-4a81-ac1f-1d441717fab6 のコメントの一覧を取得できません: GET /api/posts/4accfda2-05bf-4a81-ac1f-1d441717fab6/comments: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "hajun_jeong_3185: 履歴を読めません: GET /api/memories?month=2026-02: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "haeun_lim_4372: ログインできません: POST /api/auth/login: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "sutbul_mini_chilmyeonjo_21: フィード friends を取得できません: GET /api/feeds/friends: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "ivyho_5054: フィード public を取得できません: GET /api/feeds/public: ステータスコード 502 が返りました（期待値 200、unknown）",
+    "stew_obasan_2400: ログインできません: POST /api/auth/login: ステータスコード 502 が返りました（期待値 200、unknown）"
+  ]
+}

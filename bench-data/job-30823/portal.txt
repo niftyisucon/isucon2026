@@ -1,0 +1,46 @@
+Job #30823
+Summary
+ID: 30823
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 16:52:47.643
+Updated At: 2026-10-31 16:54:36.262
+Started At: 2026-10-31 16:52:47.701
+Finished At: 2026-10-31 16:54:36.255
+Result: Finished / Passed
+Marked At: 2026-10-31 16:54:36.255
+Score: 49969
+Score Breakdown: base=49969, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T07:53:20.558Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T07:53:21.041Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T07:53:23.998Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T07:53:29.501Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T07:53:29.970Z level=INFO msg="europe 2 日目: 14 人"
+time=2026-10-31T07:53:32.424Z level=INFO msg="user moved" user=merete5156 from=europe to=asia
+time=2026-10-31T07:53:32.977Z level=INFO msg="america 2 日目: 14 人"
+time=2026-10-31T07:53:38.872Z level=INFO msg="asia 3 日目: 21 人"
+time=2026-10-31T07:53:39.048Z level=INFO msg="europe 3 日目: 34 人"
+time=2026-10-31T07:53:40.920Z level=INFO msg="user moved" user=merete5156 from=asia to=america
+time=2026-10-31T07:53:42.104Z level=INFO msg="america 3 日目: 38 人"
+time=2026-10-31T07:53:48.135Z level=INFO msg="europe 4 日目: 83 人"
+time=2026-10-31T07:53:51.042Z level=INFO msg="america 4 日目: 94 人"
+time=2026-10-31T07:53:51.522Z level=INFO msg="asia 4 日目: 26 人"
+time=2026-10-31T07:53:55.855Z level=INFO msg="asia 5 日目: 26 人"
+time=2026-10-31T07:53:56.349Z level=INFO msg="user moved" user=merete5156 from=america to=asia
+time=2026-10-31T07:53:57.531Z level=INFO msg="europe 5 日目: 149 人"
+time=2026-10-31T07:54:00.248Z level=INFO msg="america 5 日目: 115 人"
+time=2026-10-31T07:54:09.355Z level=INFO msg="europe 最終日（グランプリ）: 148 人"
+time=2026-10-31T07:54:09.371Z level=INFO msg="america 最終日（グランプリ）: 115 人"
+time=2026-10-31T07:54:11.670Z level=INFO msg="asia 最終日（グランプリ）: 26 人"
+time=2026-10-31T07:54:17.932Z level=INFO msg="グランプリ: アジア 24 人, ヨーロッパ 147 人, アメリカ 114 人"
+{
+  "pass": true,
+  "score": 49969,
+  "messages": [
+    "ulyuru-5094: 友達申請を承認できません: POST /api/friend-requests/c74c329c-e6a1-45c2-88d2-6fcd788268cc/accept: ステータスコード 502 が返りました（期待値 200、unknown）"
+  ]
+}

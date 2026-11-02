@@ -13,3 +13,9 @@ komatsu-muse がベンチのたびに、この形式で repo に置く（形式�
 ## Convention (added 2026-10-31, human instruction)
 - Every package's summary.md MUST include a "Merged PRs newly reflected in this run" section describing, per PR, what the change actually does (files/mechanism), plus the cumulative merged-PR list for the deployed state.
 - Every bench result MUST be verified against the portal Benchmark Jobs LIST (newest job ID + score) before it is reported or packaged. (Two corrupted browser handoffs fabricated jobs #11604 and #12217; both are retracted in their directories.)
+
+## ポータル結果と Discord ログ（2026-11-02 取得）
+
+`portal-jobs.csv` はポータル一覧と詳細をまとめたものです。日時はポータル表示の JST、`duration_display` は一覧上の概数です。各ジョブの詳細は `job-<番号>/portal.txt`、同名の既存ファイルがある場合はこれを保持し、今回の取得を `portal-captured.txt` に保存しました。2026-11-02 時点で一覧に表示された56件を取得しています。ポータル以外のサーバーログやデプロイ情報は、この取得には含まれません。
+
+Discord #agent-log の履歴は [agent-log/README.md](agent-log/README.md) を参照してください。

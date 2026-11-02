@@ -1,0 +1,45 @@
+Job #35579
+Summary
+ID: 35579
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:38:28.166
+Updated At: 2026-10-31 17:39:56.600
+Started At: 2026-10-31 17:38:28.220
+Finished At: 2026-10-31 17:39:56.591
+Result: Finished / Passed
+Marked At: 2026-10-31 17:39:56.591
+Score: 44153
+Score Breakdown: base=44153, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:38:42.081Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:38:43.466Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:38:46.296Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:38:50.175Z level=INFO msg="asia 2 日目: 19 人"
+time=2026-10-31T08:38:52.300Z level=INFO msg="europe 2 日目: 16 人"
+time=2026-10-31T08:38:55.397Z level=INFO msg="america 2 日目: 13 人"
+time=2026-10-31T08:39:00.189Z level=INFO msg="asia 3 日目: 42 人"
+time=2026-10-31T08:39:01.433Z level=INFO msg="europe 3 日目: 41 人"
+time=2026-10-31T08:39:04.626Z level=INFO msg="america 3 日目: 33 人"
+time=2026-10-31T08:39:05.118Z level=INFO msg="user moved" user=toyu.5498 from=asia to=europe
+time=2026-10-31T08:39:10.370Z level=INFO msg="europe 4 日目: 90 人"
+time=2026-10-31T08:39:11.957Z level=INFO msg="asia 4 日目: 85 人"
+time=2026-10-31T08:39:12.067Z level=INFO msg="user moved" user=mevinivy-5474 from=europe to=asia
+time=2026-10-31T08:39:15.362Z level=INFO msg="america 4 日目: 71 人"
+time=2026-10-31T08:39:16.014Z level=INFO msg="user moved" user=mevinivy-5474 from=asia to=europe
+time=2026-10-31T08:39:18.525Z level=INFO msg="asia 5 日目: 85 人"
+time=2026-10-31T08:39:18.781Z level=INFO msg="user moved" user=toyu.5498 from=europe to=america
+time=2026-10-31T08:39:22.659Z level=INFO msg="america 5 日目: 72 人"
+time=2026-10-31T08:39:22.669Z level=INFO msg="europe 5 日目: 89 人"
+time=2026-10-31T08:39:31.461Z level=INFO msg="europe 最終日（グランプリ）: 89 人"
+time=2026-10-31T08:39:31.523Z level=INFO msg="america 最終日（グランプリ）: 72 人"
+time=2026-10-31T08:39:32.855Z level=INFO msg="asia 最終日（グランプリ）: 84 人"
+time=2026-10-31T08:39:40.262Z level=INFO msg="グランプリ: アジア 80 人, ヨーロッパ 88 人, アメリカ 71 人"
+{
+  "pass": true,
+  "score": 44153,
+  "messages": []
+}

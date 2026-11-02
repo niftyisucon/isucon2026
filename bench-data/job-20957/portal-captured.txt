@@ -1,0 +1,45 @@
+Job #20957
+Summary
+ID: 20957
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 15:08:03.060
+Updated At: 2026-10-31 15:09:34.597
+Started At: 2026-10-31 15:08:03.439
+Finished At: 2026-10-31 15:09:34.594
+Result: Finished / Passed
+Marked At: 2026-10-31 15:09:34.594
+Score: 29335
+Score Breakdown: base=29335, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T06:08:22.716Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T06:08:22.810Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T06:08:25.018Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T06:08:30.815Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T06:08:30.871Z level=INFO msg="user moved" user=ruko-5146 from=america to=europe
+time=2026-10-31T06:08:31.058Z level=INFO msg="europe 2 日目: 9 人"
+time=2026-10-31T06:08:33.976Z level=INFO msg="america 2 日目: 10 人"
+time=2026-10-31T06:08:38.549Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T06:08:40.181Z level=INFO msg="europe 3 日目: 17 人"
+time=2026-10-31T06:08:43.034Z level=INFO msg="america 3 日目: 24 人"
+time=2026-10-31T06:08:44.124Z level=INFO msg="user moved" user=ruko-5146 from=europe to=asia
+time=2026-10-31T06:08:47.732Z level=INFO msg="asia 4 日目: 20 人"
+time=2026-10-31T06:08:49.765Z level=INFO msg="europe 4 日目: 36 人"
+time=2026-10-31T06:08:50.393Z level=INFO msg="user moved" user=ruko-5146 from=asia to=america
+time=2026-10-31T06:08:52.294Z level=INFO msg="america 4 日目: 55 人"
+time=2026-10-31T06:08:57.643Z level=INFO msg="asia 5 日目: 21 人"
+time=2026-10-31T06:08:57.737Z level=INFO msg="user moved" user=eltor5470 from=america to=europe
+time=2026-10-31T06:08:58.433Z level=INFO msg="europe 5 日目: 62 人"
+time=2026-10-31T06:09:01.316Z level=INFO msg="america 5 日目: 77 人"
+time=2026-10-31T06:09:10.294Z level=INFO msg="europe 最終日（グランプリ）: 61 人"
+time=2026-10-31T06:09:10.528Z level=INFO msg="america 最終日（グランプリ）: 77 人"
+time=2026-10-31T06:09:12.585Z level=INFO msg="asia 最終日（グランプリ）: 20 人"
+time=2026-10-31T06:09:18.934Z level=INFO msg="グランプリ: アジア 16 人, ヨーロッパ 61 人, アメリカ 76 人"
+{
+  "pass": true,
+  "score": 29335,
+  "messages": []
+}

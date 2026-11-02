@@ -1,0 +1,43 @@
+Job #27578
+Summary
+ID: 27578
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 16:19:51.847
+Updated At: 2026-10-31 16:21:27.014
+Started At: 2026-10-31 16:19:51.919
+Finished At: 2026-10-31 16:21:27.009
+Result: Finished / Passed
+Marked At: 2026-10-31 16:21:27.009
+Score: 40347
+Score Breakdown: base=40347, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T07:20:09.696Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T07:20:10.230Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T07:20:13.148Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T07:20:17.556Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T07:20:19.375Z level=INFO msg="europe 2 日目: 14 人"
+time=2026-10-31T07:20:22.152Z level=INFO msg="america 2 日目: 13 人"
+time=2026-10-31T07:20:27.298Z level=INFO msg="asia 3 日目: 28 人"
+time=2026-10-31T07:20:28.553Z level=INFO msg="europe 3 日目: 33 人"
+time=2026-10-31T07:20:31.360Z level=INFO msg="america 3 日目: 34 人"
+time=2026-10-31T07:20:37.386Z level=INFO msg="europe 4 日目: 69 人"
+time=2026-10-31T07:20:39.386Z level=INFO msg="asia 4 日目: 47 人"
+time=2026-10-31T07:20:39.611Z level=INFO msg="user moved" user=hatsusu.5413 from=europe to=america
+time=2026-10-31T07:20:41.484Z level=INFO msg="america 4 日目: 77 人"
+time=2026-10-31T07:20:44.596Z level=INFO msg="asia 5 日目: 47 人"
+time=2026-10-31T07:20:47.245Z level=INFO msg="europe 5 日目: 86 人"
+time=2026-10-31T07:20:48.026Z level=INFO msg="user moved" user=hatsusu.5413 from=america to=europe
+time=2026-10-31T07:20:49.728Z level=INFO msg="america 5 日目: 76 人"
+time=2026-10-31T07:20:58.441Z level=INFO msg="europe 最終日（グランプリ）: 86 人"
+time=2026-10-31T07:20:58.592Z level=INFO msg="america 最終日（グランプリ）: 75 人"
+time=2026-10-31T07:21:01.721Z level=INFO msg="asia 最終日（グランプリ）: 46 人"
+time=2026-10-31T07:21:07.127Z level=INFO msg="グランプリ: アジア 46 人, ヨーロッパ 86 人, アメリカ 75 人"
+{
+  "pass": true,
+  "score": 40347,
+  "messages": []
+}

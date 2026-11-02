@@ -1,0 +1,45 @@
+Job #26992
+Summary
+ID: 26992
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 16:13:58.025
+Updated At: 2026-10-31 16:15:30.291
+Started At: 2026-10-31 16:13:58.069
+Finished At: 2026-10-31 16:15:30.290
+Result: Finished / Passed
+Marked At: 2026-10-31 16:15:30.290
+Score: 34749
+Score Breakdown: base=34749, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T07:14:14.014Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T07:14:15.868Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T07:14:18.795Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T07:14:23.359Z level=INFO msg="asia 2 日目: 28 人"
+time=2026-10-31T07:14:23.431Z level=INFO msg="user moved" user=fusudan.5120 from=america to=asia
+time=2026-10-31T07:14:24.141Z level=INFO msg="user moved" user=fusudan.5120 from=asia to=europe
+time=2026-10-31T07:14:24.922Z level=INFO msg="europe 2 日目: 14 人"
+time=2026-10-31T07:14:27.819Z level=INFO msg="america 2 日目: 13 人"
+time=2026-10-31T07:14:32.485Z level=INFO msg="asia 3 日目: 51 人"
+time=2026-10-31T07:14:34.137Z level=INFO msg="europe 3 日目: 27 人"
+time=2026-10-31T07:14:37.007Z level=INFO msg="america 3 日目: 31 人"
+time=2026-10-31T07:14:38.808Z level=INFO msg="user moved" user=evaro_5409 from=asia to=america
+time=2026-10-31T07:14:38.989Z level=INFO msg="user moved" user=fusudan.5120 from=europe to=america
+time=2026-10-31T07:14:42.858Z level=INFO msg="europe 4 日目: 51 人"
+time=2026-10-31T07:14:43.563Z level=INFO msg="asia 4 日目: 92 人"
+time=2026-10-31T07:14:48.850Z level=INFO msg="america 4 日目: 70 人"
+time=2026-10-31T07:14:51.599Z level=INFO msg="asia 5 日目: 92 人"
+time=2026-10-31T07:14:52.321Z level=INFO msg="europe 5 日目: 51 人"
+time=2026-10-31T07:14:55.816Z level=INFO msg="america 5 日目: 70 人"
+time=2026-10-31T07:15:04.106Z level=INFO msg="america 最終日（グランプリ）: 70 人"
+time=2026-10-31T07:15:04.126Z level=INFO msg="europe 最終日（グランプリ）: 50 人"
+time=2026-10-31T07:15:07.465Z level=INFO msg="asia 最終日（グランプリ）: 91 人"
+time=2026-10-31T07:15:12.771Z level=INFO msg="グランプリ: アジア 16 人, ヨーロッパ 47 人, アメリカ 69 人"
+{
+  "pass": true,
+  "score": 34749,
+  "messages": []
+}

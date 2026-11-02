@@ -1,0 +1,43 @@
+Job #31927
+Summary
+ID: 31927
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:03:35.431
+Updated At: 2026-10-31 17:05:02.040
+Started At: 2026-10-31 17:03:35.489
+Finished At: 2026-10-31 17:05:02.038
+Result: Finished / Passed
+Marked At: 2026-10-31 17:05:02.038
+Score: 46319
+Score Breakdown: base=46319, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:03:51.711Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:03:52.857Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:03:54.321Z level=INFO msg="user moved" user=yane.5033 from=asia to=europe
+time=2026-10-31T08:03:55.635Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:03:59.826Z level=INFO msg="asia 2 日目: 17 人"
+time=2026-10-31T08:04:01.787Z level=INFO msg="europe 2 日目: 14 人"
+time=2026-10-31T08:04:04.625Z level=INFO msg="america 2 日目: 13 人"
+time=2026-10-31T08:04:09.086Z level=INFO msg="asia 3 日目: 28 人"
+time=2026-10-31T08:04:09.142Z level=INFO msg="user moved" user=yane.5033 from=europe to=america
+time=2026-10-31T08:04:10.779Z level=INFO msg="europe 3 日目: 33 人"
+time=2026-10-31T08:04:13.725Z level=INFO msg="america 3 日目: 32 人"
+time=2026-10-31T08:04:19.713Z level=INFO msg="europe 4 日目: 77 人"
+time=2026-10-31T08:04:21.273Z level=INFO msg="asia 4 日目: 54 人"
+time=2026-10-31T08:04:23.605Z level=INFO msg="america 4 日目: 75 人"
+time=2026-10-31T08:04:28.319Z level=INFO msg="asia 5 日目: 54 人"
+time=2026-10-31T08:04:30.294Z level=INFO msg="europe 5 日目: 120 人"
+time=2026-10-31T08:04:31.913Z level=INFO msg="america 5 日目: 75 人"
+time=2026-10-31T08:04:40.805Z level=INFO msg="america 最終日（グランプリ）: 74 人"
+time=2026-10-31T08:04:40.901Z level=INFO msg="europe 最終日（グランプリ）: 119 人"
+time=2026-10-31T08:04:42.633Z level=INFO msg="asia 最終日（グランプリ）: 53 人"
+time=2026-10-31T08:04:49.590Z level=INFO msg="グランプリ: アジア 52 人, ヨーロッパ 119 人, アメリカ 74 人"
+{
+  "pass": true,
+  "score": 46319,
+  "messages": []
+}

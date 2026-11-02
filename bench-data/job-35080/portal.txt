@@ -1,0 +1,43 @@
+Job #35080
+Summary
+ID: 35080
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 17:33:49.347
+Updated At: 2026-10-31 17:35:18.433
+Started At: 2026-10-31 17:33:49.383
+Finished At: 2026-10-31 17:35:18.427
+Result: Finished / Passed
+Marked At: 2026-10-31 17:35:18.427
+Score: 32199
+Score Breakdown: base=32199, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T08:34:03.792Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T08:34:06.135Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T08:34:08.927Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T08:34:12.729Z level=INFO msg="asia 2 日目: 39 人"
+time=2026-10-31T08:34:14.965Z level=INFO msg="europe 2 日目: 13 人"
+time=2026-10-31T08:34:17.934Z level=INFO msg="america 2 日目: 14 人"
+time=2026-10-31T08:34:23.968Z level=INFO msg="europe 3 日目: 30 人"
+time=2026-10-31T08:34:24.541Z level=INFO msg="asia 3 日目: 102 人"
+time=2026-10-31T08:34:27.604Z level=INFO msg="america 3 日目: 35 人"
+time=2026-10-31T08:34:32.482Z level=INFO msg="asia 4 日目: 102 人"
+time=2026-10-31T08:34:32.758Z level=INFO msg="user moved" user=homarro.5540 from=asia to=europe
+time=2026-10-31T08:34:35.582Z level=INFO msg="europe 4 日目: 31 人"
+time=2026-10-31T08:34:36.892Z level=INFO msg="america 4 日目: 35 人"
+time=2026-10-31T08:34:38.141Z level=INFO msg="user moved" user=homarro.5540 from=europe to=america
+time=2026-10-31T08:34:41.973Z level=INFO msg="asia 5 日目: 107 人"
+time=2026-10-31T08:34:42.238Z level=INFO msg="europe 5 日目: 33 人"
+time=2026-10-31T08:34:47.902Z level=INFO msg="america 5 日目: 48 人"
+time=2026-10-31T08:34:54.067Z level=INFO msg="europe 最終日（グランプリ）: 32 人"
+time=2026-10-31T08:34:54.251Z level=INFO msg="america 最終日（グランプリ）: 47 人"
+time=2026-10-31T08:34:56.930Z level=INFO msg="asia 最終日（グランプリ）: 106 人"
+time=2026-10-31T08:35:02.889Z level=INFO msg="グランプリ: アジア 21 人, ヨーロッパ 31 人, アメリカ 40 人"
+{
+  "pass": true,
+  "score": 32199,
+  "messages": []
+}

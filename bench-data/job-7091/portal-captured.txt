@@ -1,0 +1,41 @@
+Job #7091
+Summary
+ID: 7091
+Target: #1: 192.168.1.10 (54.199.25.62)
+Status: FINISHED
+Enqueued By: yukiex
+Enqueued At: 2026-10-31 12:12:23.537
+Updated At: 2026-10-31 12:14:39.379
+Started At: 2026-10-31 12:12:23.669
+Finished At: 2026-10-31 12:14:39.378
+Result: Finished / Passed
+Marked At: 2026-10-31 12:14:39.378
+Score: 8965
+Score Breakdown: base=8965, deduction=0
+Conclusion
+Reason: 実行終了
+Stdout
+time=2026-10-31T03:12:52.913Z level=INFO msg="asia 1 日目: 18 人"
+time=2026-10-31T03:12:54.432Z level=INFO msg="europe 1 日目: 7 人"
+time=2026-10-31T03:12:56.937Z level=INFO msg="america 1 日目: 6 人"
+time=2026-10-31T03:13:01.479Z level=INFO msg="asia 2 日目: 18 人"
+time=2026-10-31T03:13:03.145Z level=INFO msg="europe 2 日目: 7 人"
+time=2026-10-31T03:13:06.112Z level=INFO msg="america 2 日目: 6 人"
+time=2026-10-31T03:13:10.960Z level=INFO msg="asia 3 日目: 18 人"
+time=2026-10-31T03:13:12.057Z level=INFO msg="europe 3 日目: 7 人"
+time=2026-10-31T03:13:15.666Z level=INFO msg="america 3 日目: 6 人"
+time=2026-10-31T03:13:19.728Z level=INFO msg="asia 4 日目: 18 人"
+time=2026-10-31T03:13:21.040Z level=INFO msg="europe 4 日目: 7 人"
+time=2026-10-31T03:13:23.968Z level=INFO msg="america 4 日目: 6 人"
+time=2026-10-31T03:13:28.691Z level=INFO msg="asia 5 日目: 18 人"
+time=2026-10-31T03:13:30.123Z level=INFO msg="europe 5 日目: 7 人"
+time=2026-10-31T03:13:32.985Z level=INFO msg="america 5 日目: 6 人"
+time=2026-10-31T03:13:44.035Z level=INFO msg="asia 最終日（グランプリ）: 17 人"
+time=2026-10-31T03:13:44.078Z level=INFO msg="europe 最終日（グランプリ）: 7 人"
+time=2026-10-31T03:13:44.134Z level=INFO msg="america 最終日（グランプリ）: 6 人"
+time=2026-10-31T03:13:50.845Z level=INFO msg="グランプリ: アジア 17 人, ヨーロッパ 5 人, アメリカ 5 人"
+{
+  "pass": true,
+  "score": 8965,
+  "messages": []
+}
