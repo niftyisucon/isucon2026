@@ -52,17 +52,47 @@ func newCoreAdmission(config *Config) *coreAdmission {
 	if len(listeners) < 2 {
 		return nil
 	}
-	limit := (databaseConnectionLimit(config) - 3) / len(listeners)
-	if raw := os.Getenv("ISUREAL_CORE_REGION_CONCURRENCY"); raw != "" {
-		n, err := strconv.Atoi(raw)
+	budget := databaseConnectionLimit(config) - 3
+	limit := budget / len(listeners)
+	rawLimits := os.Getenv("ISUREAL_CORE_REGION_LIMITS")
+	rawConcurrency := os.Getenv("ISUREAL_CORE_REGION_CONCURRENCY")
+	if rawLimits != "" && rawConcurrency != "" {
+		panic("ISUREAL_CORE_REGION_LIMITS and ISUREAL_CORE_REGION_CONCURRENCY cannot both be set")
+	}
+	if rawConcurrency != "" {
+		n, err := strconv.Atoi(rawConcurrency)
 		if err != nil || n < 1 || n > limit {
 			panic("ISUREAL_CORE_REGION_CONCURRENCY must be between 1 and the per-region DB budget")
 		}
 		limit = n
 	}
+	limits := make(map[string]int, len(listeners))
+	for _, listener := range listeners {
+		limits[listener.Region] = limit
+	}
+	if rawLimits != "" {
+		seen := make(map[string]bool, len(listeners))
+		for _, entry := range strings.Split(rawLimits, ",") {
+			parts := strings.Split(entry, ":")
+			if len(parts) != 2 {
+				panic("ISUREAL_CORE_REGION_LIMITS must contain region:limit entries")
+			}
+			_, known := limits[parts[0]]
+			n, err := strconv.Atoi(parts[1])
+			if !known || seen[parts[0]] || err != nil || n < 1 || n > budget {
+				panic("ISUREAL_CORE_REGION_LIMITS requires each listener region exactly once, limits >= 1 and total <= DB budget")
+			}
+			limits[parts[0]] = n
+			seen[parts[0]] = true
+			budget -= n // Check before subtracting to avoid integer overflow.
+		}
+		if len(seen) != len(listeners) {
+			panic("ISUREAL_CORE_REGION_LIMITS must specify all listener regions")
+		}
+	}
 	a := &coreAdmission{regions: make(map[string]*admissionRegion), control: &admissionRegion{slots: make(chan struct{}, 2)}}
 	for _, listener := range listeners {
-		a.regions[listener.Region] = &admissionRegion{slots: make(chan struct{}, limit)}
+		a.regions[listener.Region] = &admissionRegion{slots: make(chan struct{}, limits[listener.Region])}
 	}
 	return a
 }

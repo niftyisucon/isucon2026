@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -33,6 +34,7 @@ func waitAdmission(t *testing.T, condition func() bool) {
 }
 
 func TestCoreAdmissionConfigurationAndBudget(t *testing.T) {
+	t.Setenv("ISUREAL_CORE_REGION_LIMITS", "")
 	t.Setenv("ISUREAL_CORE_ADMISSION", "")
 	if newCoreAdmission(admissionTestConfig()) != nil {
 		t.Fatal("unrequested experiment enabled")
@@ -71,6 +73,85 @@ func TestCoreAdmissionConfigurationAndBudget(t *testing.T) {
 	}
 }
 
+func TestCoreAdmissionRegionLimits(t *testing.T) {
+	t.Setenv("ISUREAL_CORE_ADMISSION", "true")
+	for _, tc := range []struct {
+		name, pool, listeners, limits, concurrency string
+		want                                       map[string]int
+	}{
+		{name: "default30", pool: "30", want: map[string]int{"asia": 9, "europe": 9, "america": 9}},
+		{name: "default45", pool: "45", want: map[string]int{"asia": 14, "europe": 14, "america": 14}},
+		{name: "default60", pool: "60", want: map[string]int{"asia": 19, "europe": 19, "america": 19}},
+		{name: "legacy", concurrency: "2", want: map[string]int{"asia": 2, "europe": 2, "america": 2}},
+		{name: "weighted", limits: "asia:5,europe:11,america:11", want: map[string]int{"asia": 5, "europe": 11, "america": 11}},
+		{name: "reordered-under-budget", limits: "america:3,asia:1,europe:2", want: map[string]int{"asia": 1, "europe": 2, "america": 3}},
+		{name: "larger-pool", pool: "45", limits: "asia:2,europe:20,america:20", want: map[string]int{"asia": 2, "europe": 20, "america": 20}},
+		{name: "two-listeners", listeners: "asia:8080,europe:8081", limits: "europe:26,asia:1", want: map[string]int{"asia": 1, "europe": 26}},
+		{name: "missing", limits: "asia:5,europe:11"},
+		{name: "unknown", limits: "asia:5,europe:10,america:11,other:1"},
+		{name: "non-listener", listeners: "asia:8080,europe:8081", limits: "asia:1,europe:1,america:1"},
+		{name: "duplicate", limits: "asia:5,europe:11,asia:11"},
+		{name: "duplicate-extra", limits: "asia:1,europe:1,america:1,asia:1"},
+		{name: "zero", limits: "asia:0,europe:11,america:11"},
+		{name: "negative", limits: "asia:-1,europe:11,america:11"},
+		{name: "over-budget", limits: "asia:6,europe:11,america:11"},
+		{name: "integer-overflow", limits: "asia:9223372036854775807,europe:1,america:1"},
+		{name: "parse-overflow", limits: "asia:9999999999999999999999999,europe:1,america:1"},
+		{name: "not-integer", limits: "asia:bad,europe:11,america:11"},
+		{name: "fraction", limits: "asia:1.5,europe:11,america:11"},
+		{name: "empty-limit", limits: "asia:,europe:11,america:11"},
+		{name: "malformed", limits: "asia=5,europe:11,america:11"},
+		{name: "extra-colon", limits: "asia:5:1,europe:11,america:11"},
+		{name: "empty-entry", limits: "asia:5,europe:11,america:11,"},
+		{name: "both-settings", limits: "asia:5,europe:11,america:11", concurrency: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("ISUREAL_CORE_DB_MAX_OPEN", tc.pool)
+			t.Setenv("ISUREAL_CORE_REGION_LIMITS", tc.limits)
+			t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", tc.concurrency)
+			config := admissionTestConfig()
+			if tc.listeners != "" {
+				config.ListenRegions = tc.listeners
+			}
+			if tc.want == nil {
+				defer func() {
+					if p := recover(); p == nil || !strings.Contains(fmt.Sprint(p), "ISUREAL_CORE_REGION_LIMITS") {
+						t.Fatalf("expected region limits configuration panic, got %v", p)
+					}
+				}()
+				newCoreAdmission(config)
+				return
+			}
+			a := newCoreAdmission(config)
+			if len(a.regions) != len(tc.want) || a.stats()["control"].Limit != 2 {
+				t.Fatal("listener regions or control budget changed")
+			}
+			for region, want := range tc.want {
+				if got := a.stats()[region].Limit; got != want {
+					t.Fatalf("%s limit=%d, want %d", region, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestCoreAdmissionRegionLimitsIgnoredOutsideSharedAdmission(t *testing.T) {
+	t.Setenv("ISUREAL_CORE_REGION_LIMITS", "invalid")
+	t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "1")
+	for _, enabled := range []string{"", "false", "TRUE"} {
+		t.Setenv("ISUREAL_CORE_ADMISSION", enabled)
+		if newCoreAdmission(admissionTestConfig()) != nil {
+			t.Fatal("disabled admission parsed region limits")
+		}
+	}
+	t.Setenv("ISUREAL_CORE_ADMISSION", "true")
+	for _, config := range []*Config{nil, {Region: "asia"}, {Region: "europe", EdgeUpstream: "http://127.0.0.1:8081"}} {
+		if newCoreAdmission(config) != nil {
+			t.Fatal("region limits affected a single listener or edge")
+		}
+	}
+}
+
 func TestCoreAdmissionCanceledQueueAndPanicRelease(t *testing.T) {
 	r := &admissionRegion{slots: make(chan struct{}, 1)}
 	first, err := r.acquire(t.Context())
@@ -104,7 +185,8 @@ func TestCoreAdmissionCanceledQueueAndPanicRelease(t *testing.T) {
 
 func TestCoreAdmissionStatsAndTraceQueuedWait(t *testing.T) {
 	t.Setenv("ISUREAL_CORE_ADMISSION", "true")
-	t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "1")
+	t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "")
+	t.Setenv("ISUREAL_CORE_REGION_LIMITS", "asia:1,europe:2,america:3")
 	a := newCoreAdmission(admissionTestConfig())
 	held, err := a.regions["asia"].acquire(t.Context())
 	if err != nil {
@@ -137,6 +219,11 @@ func TestCoreAdmissionStatsAndTraceQueuedWait(t *testing.T) {
 	if snapshot.Admission["asia"].Waiting != 1 || snapshot.Admission["asia"].InUse != 1 || strings.Contains(recorder.Body.String(), "private-") {
 		t.Fatal("admission stats missing or exposed credentials")
 	}
+	for region, want := range map[string]int{"asia": 1, "europe": 2, "america": 3, "control": 2} {
+		if got := snapshot.Admission[region].Limit; got != want {
+			t.Fatalf("/debug/stats %s limit=%d, want %d", region, got, want)
+		}
+	}
 	held.release()
 	<-done
 	for _, span := range exporter.GetSpans() {
@@ -150,10 +237,23 @@ func TestCoreAdmissionStatsAndTraceQueuedWait(t *testing.T) {
 // Exercise real sql.DB capacity: queued asia requests must not acquire it while
 // europe, america and the control path can still make progress.
 func TestCoreAdmissionProtectsOtherRegionsAndControl(t *testing.T) {
+	for _, limits := range []string{"", "asia:1,europe:2,america:3"} {
+		t.Run("limits="+limits, func(t *testing.T) {
+			t.Setenv("ISUREAL_CORE_REGION_LIMITS", limits)
+			t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "")
+			if limits == "" {
+				t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "1")
+			}
+			testCoreAdmissionProtectsOtherRegionsAndControl(t)
+		})
+	}
+}
+
+func testCoreAdmissionProtectsOtherRegionsAndControl(t *testing.T) {
+	t.Helper()
 	db, _ := architectureDB(t)
 	db.SetMaxOpenConns(4)
 	t.Setenv("ISUREAL_CORE_ADMISSION", "true")
-	t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "1")
 	a := newCoreAdmission(admissionTestConfig())
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -229,6 +329,7 @@ func TestCoreAdmissionDoesNotPinSlotsForSSE(t *testing.T) {
 	db, _ := architectureDB(t)
 	_, token := fixtureOwner(t, db)
 	t.Setenv("ISUREAL_CORE_ADMISSION", "true")
+	t.Setenv("ISUREAL_CORE_REGION_LIMITS", "")
 	t.Setenv("ISUREAL_CORE_REGION_CONCURRENCY", "1")
 	config := admissionTestConfig()
 	config.Region = "europe" // fixtureOwner belongs to europe.
