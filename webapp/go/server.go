@@ -144,7 +144,9 @@ func NewRegionServer(config *Config, r *Runtime) *echo.Echo {
 	handlerContext := &HandlerContext{DB: r.DB, Config: config, IPBans: r.IPBans, Images: r.Images, Files: r.Files, StorageColumn: r.StorageColumn, Notifications: r.Notifications, Sessions: r.Sessions}
 	if config.EdgeUpstream != "" {
 		e.GET("/api/notifications", getNotificationsHandler(handlerContext), IPBanMiddleware(handlerContext), SessionMiddleware(handlerContext, true), RegionMiddleware(handlerContext))
-		e.Any("/api/*", newEdgeProxy(config, r.Images))
+		proxy := newEdgeProxy(config, r.Images)
+		registerEdgeReads(e, handlerContext, proxy)
+		e.Any("/api/*", proxy)
 		return e
 	}
 	e.Use(coreAdmissionMiddleware(r.Admission, config.Region))
